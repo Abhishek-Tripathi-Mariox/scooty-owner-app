@@ -112,6 +112,13 @@ android {
         jvmTarget = "17"
     }
 }
+android.applicationVariants.all { variant ->
+    variant.outputs.all { output ->
+        if (variant.buildType.name == "release") {
+            outputFileName = "scooty-rental-ownerside-release-v${android.defaultConfig.versionName}.apk"
+        }
+    }
+}
 
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
