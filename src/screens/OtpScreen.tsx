@@ -3,17 +3,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
+import { GradientButton } from '../components/GradientButton';
 import { OtpBoxes } from '../components/OtpBoxes';
-import { OtpKeypad } from '../components/OtpKeypad';
-import { PrimaryButton } from '../components/PrimaryButton';
 import { DEFAULT_PHONE_NUMBER, OTP_LENGTH, RESEND_SECONDS } from '../constants/auth';
-import { COLORS, SPACING } from '../constants/theme';
+import { COLORS } from '../constants/theme';
 
 export function OtpScreen({
   phoneNumber,
@@ -46,93 +46,95 @@ export function OtpScreen({
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const frame = requestAnimationFrame(() => {
       otpInputRef.current?.focus();
-    }, 50);
+    });
 
-    return () => clearTimeout(timer);
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   const handleOtpInputChange = (value: string) => {
     onOtpChange(value.replace(/\D/g, '').slice(0, OTP_LENGTH));
   };
 
-  const handleKeyPress = (value: string) => {
-    if (otp.length >= OTP_LENGTH) {
-      return;
-    }
-
-    onOtpChange(`${otp}${value}`);
+  const handleResend = () => {
+    if (secondsLeft > 0) return;
+    setSecondsLeft(RESEND_SECONDS);
+    onResend?.();
   };
 
-  const handleBackspace = () => {
-    onOtpChange(otp.slice(0, -1));
-  };
+  const focusOtp = () => otpInputRef.current?.focus();
+  const canVerify = otp.length >= OTP_LENGTH && !loading;
 
   return (
     <KeyboardAvoidingView
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <AppBackground variant="otp" />
+      <AppBackground variant="auth" />
 
-      <Pressable onPress={onBack} style={styles.backButton}>
-        <Text style={styles.backButtonText}>←</Text>
-      </Pressable>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Pressable onPress={onBack} style={styles.backButton} hitSlop={10}>
+          <Text style={styles.backButtonText}>←</Text>
+        </Pressable>
 
-      <View style={styles.header}>
-        <Text style={styles.title}>Enter OTP</Text>
-        <Text style={styles.subtitle}>
-          We&apos;ve sent a {OTP_LENGTH}-digit code to{'\n'}
-          <Text style={styles.phone}>+91 {phoneNumber || DEFAULT_PHONE_NUMBER}</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Enter OTP</Text>
+          <Text style={styles.subtitle}>
+            We&apos;ve sent a {OTP_LENGTH}-digit code to{'\n'}
+            <Text style={styles.phone}>+91 {phoneNumber || DEFAULT_PHONE_NUMBER}</Text>
+          </Text>
+        </View>
+
+        <Pressable onPress={focusOtp} style={styles.card}>
+          <Text style={styles.cardLabel}>Enter OTP</Text>
+          <OtpBoxes otp={otp} length={OTP_LENGTH} activeIndex={otp.length} />
+          <TextInput
+            ref={otpInputRef}
+            value={otp}
+            onChangeText={handleOtpInputChange}
+            keyboardType="number-pad"
+            maxLength={OTP_LENGTH}
+            caretHidden
+            contextMenuHidden
+            importantForAutofill="no"
+            returnKeyType="done"
+            style={styles.hiddenInput}
+          />
+
+          <Text style={styles.resendText}>
+            {secondsLeft > 0 ? (
+              <>
+                Resend OTP in <Text style={styles.resendAccent}>{secondsLeft}s</Text>
+              </>
+            ) : (
+              <Text style={styles.resendAccent} onPress={handleResend}>
+                Resend OTP
+              </Text>
+            )}
+          </Text>
+
+          <GradientButton
+            label={loading ? 'Verifying...' : 'Verify & Continue  →'}
+            onPress={onVerify}
+            disabled={!canVerify}
+            height={56}
+            radius={14}
+            style={styles.button}
+          />
+        </Pressable>
+
+        <Text style={styles.changeNumberText}>
+          Didn&apos;t receive the code?{' '}
+          <Text style={styles.changeNumberLink} onPress={onChangeNumber}>
+            Change number
+          </Text>
         </Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Enter OTP</Text>
-        <OtpBoxes otp={otp} length={OTP_LENGTH} />
-        <TextInput
-          ref={otpInputRef}
-          value={otp}
-          onChangeText={handleOtpInputChange}
-          keyboardType="number-pad"
-          autoFocus
-          showSoftInputOnFocus={false}
-          caretHidden
-          contextMenuHidden
-          importantForAutofill="no"
-          returnKeyType="done"
-          style={styles.hiddenInput}
-        />
-
-        <Text style={styles.resendText}>
-          {secondsLeft > 0 ? (
-            <>
-              Resend OTP in <Text style={styles.resendAccent}>{secondsLeft}s</Text>
-            </>
-          ) : (
-            <Text style={styles.resendAccent} onPress={onResend}>
-              Resend OTP
-            </Text>
-          )}
-        </Text>
-
-        <PrimaryButton
-          label={loading ? 'Verifying...' : 'Verify & Continue  →'}
-          onPress={onVerify}
-          style={styles.button}
-          disabled={otp.length < OTP_LENGTH}
-        />
-      </View>
-
-      <Text style={styles.changeNumberText}>
-        Didn&apos;t receive the code?{' '}
-        <Text style={styles.changeNumberLink} onPress={onChangeNumber}>
-          Change number
-        </Text>
-      </Text>
-
-      <OtpKeypad onKeyPress={handleKeyPress} onBackspace={handleBackspace} />
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -140,82 +142,88 @@ export function OtpScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: SPACING.screenX,
-    paddingTop: 16,
-    paddingBottom: 18,
     backgroundColor: 'transparent',
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 32,
+  },
   backButton: {
-    alignSelf: 'flex-start',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 32,
   },
   backButtonText: {
-    fontSize: 28,
+    fontSize: 24,
+    lineHeight: 24,
     color: COLORS.textPrimary,
-    marginTop: -4,
   },
   header: {
     width: '100%',
-    paddingBottom: 24,
+    marginBottom: 32,
   },
   title: {
     color: COLORS.textPrimary,
-    fontSize: 29,
-    fontWeight: '900',
-    marginBottom: 8,
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 34,
+    marginBottom: 12,
   },
   subtitle: {
-    color: '#6e6970',
-    fontSize: 13,
-    lineHeight: 18,
+    color: '#717182',
+    fontSize: 14,
+    lineHeight: 20,
   },
   phone: {
     color: COLORS.textPrimary,
-    fontWeight: '800',
+    fontWeight: '500',
   },
   card: {
     width: '100%',
-    borderRadius: SPACING.cardRadius,
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 20,
-    backgroundColor: COLORS.cardStrong,
+    borderRadius: 24,
+    paddingHorizontal: 25,
+    paddingTop: 25,
+    paddingBottom: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.62)',
+    borderColor: 'rgba(255, 255, 255, 0.62)',
   },
   cardLabel: {
-    color: '#2e3444',
-    fontSize: 13,
-    fontWeight: '700',
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
   },
   resendText: {
-    marginTop: 18,
+    marginTop: 24,
     textAlign: 'center',
-    color: '#6d666c',
+    color: '#3f3f53',
     fontSize: 12,
+    lineHeight: 16,
   },
   resendAccent: {
-    color: COLORS.button,
-    fontWeight: '800',
+    color: '#fc4c02',
+    fontWeight: '600',
   },
   button: {
     marginTop: 16,
   },
   changeNumberText: {
-    marginTop: 24,
-    color: '#615c63',
-    fontSize: 13,
+    marginTop: 32,
+    textAlign: 'center',
+    color: COLORS.textPrimary,
+    fontSize: 12,
+    lineHeight: 24,
   },
   changeNumberLink: {
     color: COLORS.textPrimary,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 24,
   },
   hiddenInput: {
     position: 'absolute',

@@ -1,7 +1,45 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { PageFrame } from '../components/PageFrame';
+import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import { AppBackground } from '../components/AppBackground';
+import { GradientButton } from '../components/GradientButton';
 import { COLORS } from '../constants/theme';
+
+function ActivatedIcon({ size = 96 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <Circle
+        cx={50}
+        cy={50}
+        r={42}
+        stroke="#ffffff"
+        strokeWidth={6}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M32 52l12 12 24-28"
+        stroke="#ffffff"
+        strokeWidth={6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function GradientCircle({ size = 144 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 144 144">
+      <Defs>
+        <LinearGradient id="activatedCircle" x1="0%" y1="0%" x2="100%" y2="0%">
+          <Stop offset="0%" stopColor="#fc4c02" stopOpacity={1} />
+          <Stop offset="100%" stopColor="#ff7a45" stopOpacity={1} />
+        </LinearGradient>
+      </Defs>
+      <Circle cx={72} cy={72} r={72} fill="url(#activatedCircle)" />
+    </Svg>
+  );
+}
 
 export function AccountActivatedScreen({
   onGoToDashboard,
@@ -9,77 +47,92 @@ export function AccountActivatedScreen({
   onGoToDashboard: () => void;
 }) {
   return (
-    <PageFrame title="Account Activated" scroll={false}>
-      <View style={styles.center}>
-        <View style={styles.iconCircle}>
-          <Text style={styles.icon}>✓</Text>
-        </View>
-        <Text style={styles.heading}>Account Activated! 🎉</Text>
-        <Text style={styles.text}>
-          Your account has been successfully activated.
-        </Text>
-        <Text style={styles.text}>
-          You can now start accepting rides and earning.
-        </Text>
+    <View style={styles.root}>
+      <AppBackground variant="auth" />
+      <View style={styles.backdrop} />
 
-        <Pressable style={styles.button} onPress={onGoToDashboard}>
-          <Text style={styles.buttonText}>Go to Dashboard</Text>
-        </Pressable>
+      <View style={styles.sheet}>
+        <View style={styles.iconWrap}>
+          <GradientCircle size={144} />
+          <View style={styles.iconOverlay} pointerEvents="none">
+            <ActivatedIcon size={96} />
+          </View>
+        </View>
+
+        <Text style={styles.heading}>Account Activated! 🎉</Text>
+        <Text style={styles.body}>Your account has been successfully activated.</Text>
+        <Text style={styles.body}>You can now start accepting rides and earning.</Text>
+
+        <GradientButton
+          label="Go to Dashboard"
+          onPress={onGoToDashboard}
+          style={styles.button}
+          labelStyle={styles.buttonLabel}
+          height={56}
+          radius={14}
+        />
       </View>
-    </PageFrame>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  center: {
+  root: {
     flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  sheet: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
+    gap: 24,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    alignItems: 'center',
+  },
+  iconWrap: {
+    width: 144,
+    height: 144,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    paddingHorizontal: 18,
   },
-  iconCircle: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: COLORS.button,
+  iconOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  icon: {
-    color: '#fff',
-    fontSize: 44,
-    fontWeight: '900',
   },
   heading: {
-    marginTop: 18,
     color: COLORS.textPrimary,
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: 30,
+    fontWeight: '600',
+    lineHeight: 36,
     textAlign: 'center',
   },
-  text: {
-    marginTop: 8,
-    color: COLORS.textSecondary,
-    fontSize: 13,
+  body: {
+    color: '#6a7282',
+    fontSize: 16,
+    lineHeight: 24,
     textAlign: 'center',
-    lineHeight: 18,
+    marginTop: -12,
   },
   button: {
-    marginTop: 18,
+    marginTop: 8,
     width: '100%',
-    height: 42,
-    borderRadius: 10,
-    backgroundColor: COLORS.button,
-    alignItems: 'center',
-    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 13,
+  buttonLabel: {
+    fontSize: 18,
+    fontWeight: '500',
+    lineHeight: 28,
   },
 });

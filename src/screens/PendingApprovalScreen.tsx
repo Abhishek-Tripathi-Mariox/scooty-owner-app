@@ -1,13 +1,27 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
+import { GradientButton } from '../components/GradientButton';
 import { PageFrame } from '../components/PageFrame';
 import { FONTS } from '../constants/fonts';
-import { COLORS } from '../constants/theme';
-import VerificationIcon from '../assets/images/Vector.svg';
+
+function ClockIcon({ size = 16, color = '#464646' }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={1.6} />
+      <Path
+        d="M12 7v5l3 2"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 export function PendingApprovalScreen({
-  ownerName = 'Ravi',
+  ownerName = 'Owner',
   status = 'PENDING',
   rejectionReason,
   onRetryKyc,
@@ -18,13 +32,8 @@ export function PendingApprovalScreen({
   onRetryKyc?: () => void;
 }) {
   const isRejected = status === 'REJECTED';
-  const title = isRejected ? 'KYC Rejected' : `Thank You, ${ownerName}`;
-  const body = isRejected
-    ? 'Your KYC request was not approved yet.'
-    : 'Your documents have been successfully submitted.';
-  const subBody = isRejected
-    ? rejectionReason || 'Please update the missing or incorrect documents and submit again.'
-    : 'Our verification team is reviewing your details. You will be notified once your account is approved.';
+  const reasonText = rejectionReason?.trim();
+  const heading = isRejected ? 'KYC Rejected' : `Thank You, ${ownerName}`;
 
   return (
     <PageFrame
@@ -32,226 +41,212 @@ export function PendingApprovalScreen({
       scroll={false}
       titleStyle={styles.pageTitle}
     >
-      <View style={styles.shell}>
-        <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width="100%" height="100%">
-          <Defs>
-            <LinearGradient id="pendingApprovalBg" x1="0%" y1="0%" x2="0%" y2="100%">
-              <Stop offset="0%" stopColor="#f8e8db" stopOpacity={1} />
-              <Stop offset="56%" stopColor="#fbefe4" stopOpacity={1} />
-              <Stop offset="100%" stopColor="#f7d7df" stopOpacity={1} />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#pendingApprovalBg)" />
-        </Svg>
-        <View pointerEvents="none" style={styles.glowBottomLeft} />
-        <View pointerEvents="none" style={styles.glowBottomRight} />
-        <View style={styles.card}>
-          <Text style={styles.heading}>{title}</Text>
+      <View style={styles.content}>
+        <Text style={styles.heading}>{heading}</Text>
 
-          <View style={styles.heroWrap}>
-            <Image
-              source={require('../assets/images/registration-pending-hero.png')}
-              style={styles.heroImage}
-              resizeMode="contain"
-            />
-          </View>
+        <View style={styles.heroWrap}>
+          <Image
+            source={require('../assets/images/registration-pending-hero.png')}
+            style={styles.heroImage}
+            resizeMode="contain"
+          />
+        </View>
 
-          <Text style={styles.body}>
-            {isRejected ? (
-              'Your KYC request was not approved yet.'
-            ) : (
-              <>
-                Your <Text style={styles.bodyStrong}>documents</Text> have been successfully
-                submitted.
-              </>
-            )}
-          </Text>
-          <Text style={styles.subBody}>{subBody}</Text>
+        <Text style={styles.body}>
+          {isRejected ? (
+            'Your KYC request was not approved yet.'
+          ) : (
+            <>
+              Your <Text style={styles.bodyStrong}>documents</Text> have been successfully submitted.
+            </>
+          )}
+        </Text>
 
-          <View style={styles.etaCard}>
-            <View style={styles.etaTopRow}>
-              <View style={styles.etaLabelRow}>
-                <VerificationIcon width={14} height={14} />
-                <Text style={styles.etaLabel}>Estimated verification time:</Text>
-              </View>
-              <Text style={styles.etaPill}>{isRejected ? 'ACTION NEEDED' : 'UNDER REVIEW'}</Text>
-            </View>
-            <Text style={styles.etaValue}>
-              {isRejected ? 'Please update the missing details' : 'Within 24 hours'}
+        <Text style={styles.subBody}>
+          {isRejected
+            ? rejectionReason || 'Please update the missing or incorrect documents and submit again.'
+            : 'Our verification team is reviewing your details.\nYou will be notified once your account is approved.'}
+        </Text>
+
+        {isRejected ? (
+          <View style={styles.reasonCard}>
+            <Text style={styles.reasonLabel}>Rejection reason</Text>
+            <Text style={styles.reasonText}>
+              {reasonText || 'Please update the missing or incorrect documents and submit again.'}
             </Text>
           </View>
+        ) : null}
 
-          {isRejected ? (
-            <Pressable style={styles.button} onPress={onRetryKyc}>
-              <Text style={styles.buttonText}>Update KYC</Text>
-            </Pressable>
-          ) : (
-            <View style={[styles.button, styles.buttonDisabled]}>
-              <Text style={styles.buttonText}>Waiting for Approval</Text>
+        <View style={styles.etaCard}>
+          <View style={styles.etaLeft}>
+            <ClockIcon size={18} color="#464646" />
+            <View style={styles.etaTextWrap}>
+              <Text style={styles.etaLabel}>Estimated verification time:</Text>
+              <Text style={styles.etaValue}>
+                {isRejected ? 'Please update the missing details' : 'Within 24 hours'}
+              </Text>
             </View>
-          )}
-
-          <Text style={styles.note}>
-            Once approved, you&apos;ll receive a notification and can continue using the app.
-          </Text>
+          </View>
+          <View style={styles.etaPill}>
+            <Text style={styles.etaPillText}>
+              {isRejected ? 'ACTION NEEDED' : 'UNDER REVIEW'}
+            </Text>
+          </View>
         </View>
+
+        {isRejected ? (
+          <GradientButton
+            label="Update KYC"
+            onPress={onRetryKyc || (() => undefined)}
+            style={styles.button}
+            height={48}
+            radius={14}
+          />
+        ) : (
+          <GradientButton
+            label="Waiting for Approval"
+            onPress={() => undefined}
+            style={styles.button}
+            height={48}
+            radius={14}
+          />
+        )}
+
+        <Text style={styles.note}>
+          Once approved, you&apos;ll receive a notification and
+        </Text>
       </View>
     </PageFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  shell: {
+  pageTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 28,
+  },
+  content: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 0,
-    paddingBottom: 0,
-    overflow: 'hidden',
-  },
-  glowBottomLeft: {
-    position: 'absolute',
-    left: -70,
-    bottom: -80,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(199, 211, 255, 0.20)',
-  },
-  glowBottomRight: {
-    position: 'absolute',
-    right: -90,
-    bottom: -95,
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: 'rgba(242, 205, 233, 0.26)',
-  },
-  card: {
-    width: '100%',
-    borderRadius: 28,
-    paddingHorizontal: 22,
-    paddingTop: 24,
-    paddingBottom: 22,
-    backgroundColor: 'rgba(250, 238, 222, 0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.72)',
-    shadowColor: '#f1b69a',
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 4,
   },
   heading: {
-    color: COLORS.textPrimary,
+    color: '#353535',
     fontSize: 24,
-    fontWeight: '900',
-    textAlign: 'center',
-  },
-  pageTitle: {
-    height: 28,
-    fontFamily: FONTS.bold,
-    fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     lineHeight: 28,
-    letterSpacing: 0,
-    includeFontPadding: false,
+    textAlign: 'center',
+    marginBottom: 16,
   },
   heroWrap: {
-    marginTop: 18,
-    height: 250,
+    width: '100%',
+    height: 205,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 16,
   },
   heroImage: {
-    width: '100%',
-    height: '100%',
+    width: 252,
+    height: 205,
   },
   body: {
-    marginTop: 12,
-    color: COLORS.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#797878',
+    fontSize: 14,
+    fontWeight: '400',
+    lineHeight: 21,
     textAlign: 'center',
-    lineHeight: 22,
   },
   bodyStrong: {
-    fontFamily: FONTS.bold,
-    fontWeight: '800',
+    color: '#4b4b4b',
+    fontWeight: '600',
   },
   subBody: {
-    marginTop: 10,
-    color: COLORS.textSecondary,
-    fontSize: 13,
+    marginTop: 8,
+    color: '#797878',
+    fontSize: 14,
+    lineHeight: 21,
     textAlign: 'center',
-    lineHeight: 20,
+  },
+  reasonCard: {
+    width: '100%',
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(252,76,2,0.18)',
+    backgroundColor: 'rgba(252,76,2,0.06)',
+  },
+  reasonLabel: {
+    color: '#6b7280',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 6,
+  },
+  reasonText: {
+    color: '#353535',
+    fontSize: 14,
+    lineHeight: 21,
   },
   etaCard: {
-    marginTop: 20,
+    marginTop: 24,
     width: '100%',
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    borderRadius: 14,
+    minHeight: 70,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.82)',
-    backgroundColor: 'rgba(255,255,255,0.82)',
-  },
-  etaTopRow: {
+    borderColor: 'rgba(255,255,255,0.62)',
+    backgroundColor: 'rgba(255,255,255,0.3)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 12,
   },
-  etaLabelRow: {
+  etaLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+  },
+  etaTextWrap: {
+    flex: 1,
   },
   etaLabel: {
-    color: COLORS.textPrimary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  etaPill: {
-    color: '#7c4b24',
-    backgroundColor: '#f8d9c7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    fontSize: 11,
-    fontWeight: '800',
-    overflow: 'hidden',
+    color: '#464646',
+    fontSize: 14,
+    lineHeight: 20,
   },
   etaValue: {
-    color: COLORS.textSecondary,
+    color: '#464646',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  etaPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: 'rgba(252,76,2,0.15)',
+  },
+  etaPillText: {
+    color: '#4b4b4b',
     fontSize: 12,
-    fontWeight: '600',
-    marginTop: 8,
-    textAlign: 'left',
+    fontWeight: '500',
+    lineHeight: 16,
   },
   button: {
-    marginTop: 16,
+    marginTop: 24,
     width: '100%',
-    height: 54,
-    borderRadius: 18,
-    backgroundColor: COLORS.button,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 1,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 15,
   },
   note: {
-    marginTop: 14,
-    color: COLORS.textMuted,
-    fontSize: 12,
+    marginTop: 16,
+    color: '#797878',
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });

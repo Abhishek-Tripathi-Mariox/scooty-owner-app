@@ -1,5 +1,16 @@
-export const OWNER_API_BASE_URL: string = 'https://mira-ai.marioxsoftware.net/scooty/v1/api';
-const FALLBACK_OWNER_API_BASE_URL: string = 'https://mira-ai.marioxsoftware.net/v1/api';
+import { Platform } from 'react-native';
+
+const HOSTED_OWNER_API_BASE_URL = 'https://mira-ai.marioxsoftware.net/scooty/v1/api';
+const LOCAL_OWNER_API_BASE_URL = Platform.select({
+  android: 'http://10.0.2.2:3000/v1/api',
+  ios: 'http://localhost:3000/v1/api',
+  default: 'http://localhost:3000/v1/api',
+});
+
+const globalOwnerApiBaseUrl = (globalThis as { __OWNER_API_BASE_URL__?: string }).__OWNER_API_BASE_URL__;
+
+export const OWNER_API_BASE_URL: string =
+  globalOwnerApiBaseUrl?.trim() || HOSTED_OWNER_API_BASE_URL;
 
 type JsonObject = Record<string, unknown>;
 
@@ -66,13 +77,22 @@ export type Dashboard = {
     month: number;
     asOf?: string;
   };
+  averageRating?: number | null;
   vehicles: {
     total: number;
     byStatus: Record<string, number>;
   };
   maintenanceOpenCount: number;
   unreadNotifications: number;
-  liveActivity: Array<Record<string, unknown>>;
+  liveActivity: DashboardActivityItem[];
+};
+
+export type DashboardActivityItem = {
+  title: string;
+  detail: string;
+  time?: string;
+  type?: string;
+  createdAt?: string | null;
 };
 
 export type NotificationItem = {
@@ -168,6 +188,9 @@ export type VehicleItem = {
     insuranceUrl?: string;
   };
   openMaintenanceCount?: number;
+  earnings?: number;
+  rating?: number | null;
+  totalRides?: number;
   lastRide?: {
     rideId?: string;
     status?: string;
@@ -177,6 +200,41 @@ export type VehicleItem = {
     riderName?: string;
   } | null;
   createdAt?: string;
+  performance?: VehiclePerformance;
+  recentRideHistory?: VehicleRideHistoryItem[];
+  maintenanceHistory?: VehicleMaintenanceHistoryItem[];
+};
+
+export type VehiclePerformance = {
+  totalRides?: number;
+  activeRides?: number;
+  revenue?: number;
+  averageRating?: number;
+};
+
+export type VehicleRideHistoryItem = {
+  rideId: string;
+  riderName?: string;
+  riderId?: string | null;
+  date?: string;
+  dateLabel?: string;
+  durationMinutes?: number;
+  distanceKm?: number | null;
+  fare?: number;
+  status?: string;
+};
+
+export type VehicleMaintenanceHistoryItem = {
+  requestId: string;
+  issueType?: string;
+  status?: string;
+  description?: string;
+  resolutionNote?: string;
+  photoUrl?: string;
+  createdAt?: string;
+  createdAtLabel?: string;
+  updatedAt?: string;
+  updatedAtLabel?: string;
 };
 
 export type SupportFaq = {
@@ -211,6 +269,8 @@ export type StationItem = {
   name?: string;
   address?: string;
   city?: string;
+  state?: string;
+  location?: PointLocation;
 };
 
 export type OwnerKyc = {
@@ -320,12 +380,15 @@ const request = async <T>(path: string, options: RequestOptions = {}): Promise<T
     const isRouteNotFound =
       error instanceof ApiError &&
       /route not found/i.test(error.message);
+    const isLocalConnectionIssue =
+      error instanceof ApiError &&
+      /cannot reach api/i.test(error.message);
 
-    if (!isRouteNotFound || FALLBACK_OWNER_API_BASE_URL === OWNER_API_BASE_URL) {
+    if ((!isRouteNotFound && !isLocalConnectionIssue) || LOCAL_OWNER_API_BASE_URL === OWNER_API_BASE_URL) {
       throw error;
     }
 
-    return await requestWithBase<T>(FALLBACK_OWNER_API_BASE_URL, path, options);
+    return await requestWithBase<T>(LOCAL_OWNER_API_BASE_URL as string, path, options);
   }
 };
 
@@ -563,7 +626,10 @@ export const ownerApi = {
       token,
       body: payload,
     }),
-  stations: (token: string) => request<{ stations: StationItem[] }>('/owner/stations', { token }),
+  stations: (
+    token: string,
+    query: { search?: string; city?: string; state?: string; lat?: number | string; lng?: number | string } = {},
+  ) => request<{ stations: StationItem[] }>('/owner/stations', { token, query }),
 };
 
 export const ownerApiErrorMessage = (error: unknown) =>

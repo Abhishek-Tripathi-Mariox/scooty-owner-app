@@ -1,32 +1,31 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { AppBackground } from '../components/AppBackground';
+import { GradientButton } from '../components/GradientButton';
 import { PageFrame } from '../components/PageFrame';
 import { ProgressBar } from '../components/ProgressBar';
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  CloseIcon,
+  InfoIcon,
+  PencilIcon,
+} from '../components/OwnerIcons';
 import { COLORS } from '../constants/theme';
-import { Bank, type KycUploadFile } from '../services/ownerApi';
+import { Bank, Owner, type KycUploadFile } from '../services/ownerApi';
 
-function UploadCard({
-  label,
-  hint,
-  fileName,
-  onPress,
-}: {
-  label: string;
-  hint: string;
-  fileName?: string;
-  onPress: () => void;
-}) {
+function UploadArrowIcon({ size = 20, color = '#6a7282' }: { size?: number; color?: string }) {
   return (
-    <View style={styles.uploadBlock}>
-      <Text style={styles.uploadLabel}>{label}</Text>
-      <Pressable style={[styles.uploadCard, fileName ? styles.uploadCardSelected : null]} onPress={onPress}>
-        <View style={styles.uploadLeft}>
-          <Text style={styles.uploadIcon}>{fileName ? '✓' : '⇪'}</Text>
-          <Text style={styles.uploadHint}>{fileName || hint}</Text>
-        </View>
-        <Text style={styles.uploadAction}>{fileName ? 'Uploaded' : 'Upload'}</Text>
-      </Pressable>
-    </View>
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3v12m0-12-4 4m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 
@@ -34,9 +33,11 @@ export function BankDetailsScreen({
   onBack,
   onOpenEdit,
   showEditModal = false,
+  showRemoveSuccess = false,
   mode = 'profile',
   onPickBankDocument,
   bank,
+  owner,
   form,
   onChangeForm,
   onSubmit,
@@ -44,9 +45,11 @@ export function BankDetailsScreen({
   onBack: () => void;
   onOpenEdit: () => void;
   showEditModal?: boolean;
+  showRemoveSuccess?: boolean;
   mode?: 'profile' | 'onboarding';
   onPickBankDocument?: () => void;
   bank?: Bank | null;
+  owner?: Owner | null;
   form: {
     accountHolderName: string;
     bankName: string;
@@ -59,164 +62,247 @@ export function BankDetailsScreen({
   onSubmit: () => void;
 }) {
   const isOnboarding = mode === 'onboarding';
+  const isVerified = Boolean(bank?.isVerified);
 
   if (isOnboarding) {
+    const hasBankFile = Boolean(form.bankFile?.name || bank?.fileUrl);
+    const bankFileLabel = form.bankFile?.name || (bank?.fileUrl ? 'Current document uploaded' : 'Upload document');
     return (
-      <PageFrame title="Complete KYC" onBack={onBack} scroll>
-        <ProgressBar progress={78} />
+      <PageFrame title="Complete KYC" onBack={onBack} scroll titleStyle={styles.onboardingPageTitle}>
+        <ProgressBar progress={100} />
 
-        <View style={styles.onboardingCard}>
-          <Text style={styles.onboardingTitle}>Complete Your Profile</Text>
+        <Text style={styles.onboardingTitle}>Complete Your Profile</Text>
 
-          <Text style={styles.fieldLabel}>Account Holder Name</Text>
+        <View style={styles.onboardingField}>
+          <Text style={styles.onboardingLabel}>Account Holder Name</Text>
           <TextInput
             value={form.accountHolderName}
             onChangeText={(value) => onChangeForm({ accountHolderName: value })}
             placeholder="As per bank records"
-            placeholderTextColor="#8a8592"
-            style={styles.input}
+            placeholderTextColor="#717182"
+            style={styles.onboardingInput}
           />
+        </View>
 
-          <Text style={styles.fieldLabel}>Bank Name</Text>
+        <View style={styles.onboardingField}>
+          <Text style={styles.onboardingLabel}>Bank Name</Text>
           <TextInput
             value={form.bankName}
             onChangeText={(value) => onChangeForm({ bankName: value })}
             placeholder="Bank name"
-            placeholderTextColor="#8a8592"
-            style={styles.input}
+            placeholderTextColor="#717182"
+            style={styles.onboardingInput}
           />
+        </View>
 
-          <Text style={styles.fieldLabel}>Account Number</Text>
+        <View style={styles.onboardingField}>
+          <Text style={styles.onboardingLabel}>Account Number</Text>
           <TextInput
             value={form.accountNumber}
             onChangeText={(value) => onChangeForm({ accountNumber: value })}
             placeholder="Account number"
-            placeholderTextColor="#8a8592"
+            placeholderTextColor="#717182"
             keyboardType="number-pad"
-            style={styles.input}
+            style={styles.onboardingInput}
           />
+        </View>
 
-          <Text style={styles.fieldLabel}>IFSC Code</Text>
+        <View style={styles.onboardingField}>
+          <Text style={styles.onboardingLabel}>IFSC Code</Text>
           <TextInput
             value={form.ifsc}
-            onChangeText={(value) => onChangeForm({ ifsc: value })}
+            onChangeText={(value) => onChangeForm({ ifsc: value.toUpperCase() })}
             placeholder="IFSC code"
-            placeholderTextColor="#8a8592"
+            placeholderTextColor="#717182"
             autoCapitalize="characters"
-            style={styles.input}
+            style={styles.onboardingInput}
           />
-
-          <UploadCard
-            label="Upload Passbook/Cheque"
-            hint="Upload document"
-            fileName={form.bankFile?.name || undefined}
-            onPress={onPickBankDocument || (() => undefined)}
-          />
-
-          <View style={styles.ctaWrap}>
-            <Pressable style={styles.submitButton} onPress={onSubmit}>
-              <Text style={styles.submitText}>Save & Continue</Text>
-            </Pressable>
-          </View>
         </View>
+
+        <View style={styles.onboardingField}>
+          <Text style={styles.onboardingLabel}>Upload Passbook/Cheque</Text>
+          <Pressable
+            style={[styles.onboardingUploadRow, hasBankFile && styles.onboardingUploadRowSelected]}
+            onPress={onPickBankDocument || (() => undefined)}
+          >
+            <Text
+              style={[
+                styles.onboardingUploadText,
+                hasBankFile && styles.onboardingUploadTextSelected,
+              ]}
+              numberOfLines={1}
+            >
+              {bankFileLabel}
+            </Text>
+            <UploadArrowIcon size={20} color={hasBankFile ? '#fc4c02' : '#6a7282'} />
+          </Pressable>
+        </View>
+
+        <GradientButton
+          label="Save & Continue"
+          onPress={onSubmit}
+          style={styles.onboardingSubmit}
+          height={48}
+          radius={14}
+        />
       </PageFrame>
     );
   }
 
   return (
-    <View style={styles.root}>
-      <PageFrame title="Bank Details" onBack={onBack} scroll={false}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.verifiedCard}>
-            <Text style={styles.check}>✓</Text>
-            <View style={styles.verifiedCopy}>
-              <Text style={styles.verifiedTitle}>Bank Account {bank?.isVerified ? 'Verified' : 'Pending'}</Text>
-              <Text style={styles.verifiedText}>Your account is ready for payouts.</Text>
-            </View>
-          </View>
+    <View style={styles.profileRoot}>
+      <AppBackground variant="auth" />
 
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Registered Bank Information</Text>
+      <View style={styles.profileTopbar}>
+        <Pressable onPress={onBack} style={styles.profileBack} hitSlop={10}>
+          <ArrowLeftIcon size={24} color="#0f172a" />
+        </Pressable>
+        <Text style={styles.profileHeading}>Bank Details</Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.profileContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.profileVerifiedBanner}>
+          <View style={styles.profileVerifiedIcon}>
+            {isVerified ? (
+              <CheckIcon size={20} color="#fc4c02" />
+            ) : (
+              <InfoIcon size={20} color="#fc4c02" />
+            )}
+          </View>
+          <View style={styles.profileVerifiedTextWrap}>
+            <Text style={styles.profileVerifiedTitle}>
+              {isVerified ? 'Bank Account Verified' : 'Bank Details Under Review'}
+            </Text>
+            <Text style={styles.profileVerifiedSub}>
+              {isVerified
+                ? 'Your account is verified for payouts'
+                : 'Your bank details are saved and waiting for approval'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.profileCard}>
+          <View style={styles.profileCardHeader}>
+            <Text style={styles.profileCardTitle}>Registered Bank Information</Text>
+          </View>
+          <View style={styles.profileRowsWrap}>
             <Row label="Account Holder" value={bank?.accountHolderName || 'Not set'} />
             <Row label="Bank Name" value={bank?.bankName || 'Not set'} />
-            <Row label="Account Number" value={bank?.accountNumber ? `•••• ${bank.accountNumber.slice(-4)}` : 'Not set'} />
+            <Row
+              label="Account Number"
+              value={bank?.accountNumber ? `**** ${bank.accountNumber.slice(-4)}` : 'Not set'}
+            />
             <Row label="IFSC Code" value={bank?.ifsc || 'Not set'} />
             <Row label="UPI ID" value={bank?.upiId || 'Not set'} />
-            <Row label="Linked Mobile" value="Owner mobile" />
+            <Row label="Passbook/Cheque" value={bank?.fileUrl ? 'Current document uploaded' : 'Not set'} />
+            <Row label="Linked Mobile" value={owner?.mobile ? `+91 ${owner.mobile}` : 'Not set'} />
           </View>
+        </View>
 
-          <Pressable style={styles.primaryButton} onPress={onOpenEdit}>
-            <Text style={styles.primaryButtonText}>Request Bank Details Update</Text>
-          </Pressable>
+        <GradientButton
+          label="Request Bank Details Update"
+          onPress={onOpenEdit}
+          height={52}
+          radius={12}
+          leftIcon={<PencilIcon size={16} color="#ffffff" />}
+        />
 
-          <View style={styles.note}>
-            <Text style={styles.noteText}>
-              Your payout requests will be credited only to verified bank accounts. Changes require admin approval before they take effect.
-            </Text>
+        <View style={styles.profileInfoCard}>
+          <InfoIcon size={20} color="#fc4c02" />
+          <Text style={styles.profileInfoText}>
+            Your payout requests will be credited only to verified bank accounts. Changes require admin approval before they take effect.
+          </Text>
+        </View>
+      </ScrollView>
+
+      {showRemoveSuccess ? (
+        <View style={styles.profileToastWrap} pointerEvents="none">
+          <View style={styles.profileToast}>
+            <View style={styles.profileToastIcon}>
+              <CheckIcon size={12} color="#ffffff" />
+            </View>
+            <Text style={styles.profileToastText}>Update request sent for admin approval.</Text>
           </View>
-        </ScrollView>
-      </PageFrame>
+        </View>
+      ) : null}
 
       {showEditModal ? (
-        <View style={styles.overlay}>
-          <View style={styles.backdrop} />
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Request Bank Details Update</Text>
-            <Text style={styles.modalSubtitle}>
-              Update the bank details you want the admin team to review.
-            </Text>
+        <View style={styles.profileOverlay}>
+          <Pressable style={styles.profileBackdrop} onPress={onBack} />
+          <ScrollView
+            style={styles.profileModalScroll}
+            contentContainerStyle={styles.profileModalScrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.profileModal}>
+              <View style={styles.profileModalHeader}>
+                <Text style={styles.profileModalTitle}>Request Bank Details Update</Text>
+                <Pressable onPress={onBack} style={styles.profileModalClose} hitSlop={10}>
+                  <CloseIcon size={20} color="#64748b" />
+                </Pressable>
+              </View>
+              <View style={styles.profileModalBody}>
+                <ProfileFormField
+                  label="Account Holder Name *"
+                  value={form.accountHolderName}
+                  onChangeText={(v) => onChangeForm({ accountHolderName: v })}
+                />
+                <ProfileFormField
+                  label="Bank Name *"
+                  value={form.bankName}
+                  onChangeText={(v) => onChangeForm({ bankName: v })}
+                />
+                <ProfileFormField
+                  label="Account Number *"
+                  value={form.accountNumber}
+                  onChangeText={(v) => onChangeForm({ accountNumber: v })}
+                  keyboardType="number-pad"
+                />
+                <ProfileFormField
+                  label="IFSC Code *"
+                  value={form.ifsc}
+                  onChangeText={(v) => onChangeForm({ ifsc: v.toUpperCase() })}
+                  autoCapitalize="characters"
+                />
 
-            <TextInput
-              value={form.accountHolderName}
-              onChangeText={(value) => onChangeForm({ accountHolderName: value })}
-              placeholder="Account Holder Name *"
-              placeholderTextColor="#9ca3af"
-              style={styles.input}
-            />
-            <TextInput
-              value={form.bankName}
-              onChangeText={(value) => onChangeForm({ bankName: value })}
-              placeholder="Bank Name *"
-              placeholderTextColor="#9ca3af"
-              style={styles.input}
-            />
-            <TextInput
-              value={form.accountNumber}
-              onChangeText={(value) => onChangeForm({ accountNumber: value })}
-              placeholder="Account Number *"
-              placeholderTextColor="#9ca3af"
-              keyboardType="number-pad"
-              style={styles.input}
-            />
-            <TextInput
-              value={form.ifsc}
-              onChangeText={(value) => onChangeForm({ ifsc: value })}
-              placeholder="IFSC Code *"
-              placeholderTextColor="#9ca3af"
-              autoCapitalize="characters"
-              style={styles.input}
-            />
-            <TextInput
-              value={form.upiId}
-              onChangeText={(value) => onChangeForm({ upiId: value })}
-              placeholder="UPI ID"
-              placeholderTextColor="#9ca3af"
-              style={styles.input}
-            />
-            <View style={styles.smallNoteWrap}>
-              <Text style={styles.smallNote}>
-                All changes will be verified by the admin team before they take effect. You will be notified once approved.
-              </Text>
+                <View style={styles.modalUploadField}>
+                  <Text style={styles.modalUploadLabel}>Upload Passbook/Cancelled Cheque</Text>
+                  <Pressable
+                    style={styles.modalUpload}
+                    onPress={onPickBankDocument || (() => undefined)}
+                  >
+                    <UploadArrowIcon size={32} color="#6a7282" />
+                    <Text style={styles.modalUploadText}>
+                      {form.bankFile?.name || (
+                        <>
+                          Drag & drop or <Text style={styles.modalUploadLink}>browse</Text>
+                        </>
+                      )}
+                    </Text>
+                    <Text style={styles.modalUploadHint}>PNG, JPG or PDF (Max 5MB)</Text>
+                  </Pressable>
+                </View>
+
+                <View style={styles.modalNotice}>
+                  <Text style={styles.modalNoticeText}>
+                    ⚠️ All changes will be verified by the admin team before they take effect. You will be notified once approved.
+                  </Text>
+                </View>
+
+                <View style={styles.profileModalActions}>
+                  <Pressable style={styles.profileModalCancel} onPress={onBack}>
+                    <Text style={styles.profileModalCancelText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.profileModalSubmit} onPress={onSubmit}>
+                    <Text style={styles.profileModalSubmitText}>Submit Request</Text>
+                  </Pressable>
+                </View>
+              </View>
             </View>
-            <View style={styles.modalActions}>
-              <Pressable style={styles.cancelButton} onPress={onBack}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable style={styles.submitButton} onPress={onSubmit}>
-                <Text style={styles.submitText}>Submit Request</Text>
-              </Pressable>
-            </View>
-          </View>
+          </ScrollView>
         </View>
       ) : null}
     </View>
@@ -225,9 +311,37 @@ export function BankDetailsScreen({
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+    <View style={styles.profileRow}>
+      <Text style={styles.profileRowLabel}>{label}</Text>
+      <Text style={styles.profileRowValue}>{value}</Text>
+    </View>
+  );
+}
+
+function ProfileFormField({
+  label,
+  value,
+  onChangeText,
+  keyboardType,
+  autoCapitalize,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  keyboardType?: 'default' | 'email-address' | 'number-pad' | 'phone-pad';
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+}) {
+  return (
+    <View style={styles.modalField}>
+      <Text style={styles.modalFieldLabel}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        style={styles.modalFieldInput}
+        placeholderTextColor="rgba(10,10,10,0.5)"
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+      />
     </View>
   );
 }
@@ -235,21 +349,67 @@ function Row({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.background },
   content: { paddingBottom: 16 },
-  onboardingCard: {
-    backgroundColor: 'rgba(250, 238, 222, 0.92)',
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.78)',
-    paddingHorizontal: 22,
-    paddingTop: 22,
-    paddingBottom: 20,
-    overflow: 'hidden',
+  onboardingPageTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 28,
   },
   onboardingTitle: {
     color: COLORS.textPrimary,
-    fontSize: 21,
-    fontWeight: '900',
-    marginBottom: 10,
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 28,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  onboardingField: {
+    marginBottom: 16,
+  },
+  onboardingLabel: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 14,
+    marginBottom: 8,
+  },
+  onboardingInput: {
+    height: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.62)',
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    color: COLORS.textPrimary,
+    fontSize: 16,
+  },
+  onboardingUploadRow: {
+    height: 54,
+    borderRadius: 14,
+    borderWidth: 1.162,
+    borderColor: '#d1d5dc',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 17,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  onboardingUploadRowSelected: {
+    borderColor: '#fc4c02',
+    backgroundColor: 'rgba(255,244,239,0.5)',
+  },
+  onboardingUploadText: {
+    color: '#6a7282',
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
+  },
+  onboardingUploadTextSelected: {
+    color: '#fc4c02',
+    fontWeight: '500',
+  },
+  onboardingSubmit: {
+    marginTop: 8,
   },
   fieldLabel: {
     color: COLORS.textPrimary,
@@ -257,55 +417,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 11,
     marginBottom: 7,
-  },
-  uploadBlock: {
-    marginTop: 14,
-  },
-  uploadLabel: {
-    color: COLORS.textPrimary,
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  uploadCard: {
-    minHeight: 52,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#cdd6e2',
-    backgroundColor: 'rgba(255,255,255,0.64)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  uploadCardSelected: {
-    borderColor: COLORS.button,
-    backgroundColor: 'rgba(255,244,239,0.92)',
-  },
-  uploadLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 10,
-  },
-  uploadIcon: {
-    color: '#8fa0bf',
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  uploadHint: {
-    color: '#6d7084',
-    fontSize: 13,
-    flexShrink: 1,
-  },
-  uploadAction: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  ctaWrap: {
-    marginTop: 24,
   },
   verifiedCard: {
     flexDirection: 'row',
@@ -462,5 +573,330 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     backgroundColor: 'rgba(196, 203, 230, 0.26)',
+  },
+  profileRoot: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  profileTopbar: {
+    height: 82,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.62)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  profileBack: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileHeading: {
+    color: '#000000',
+    fontSize: 24,
+    fontWeight: '500',
+    lineHeight: 32,
+  },
+  profileContent: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 24,
+    gap: 16,
+  },
+  profileVerifiedBanner: {
+    borderRadius: 16,
+    borderWidth: 1.162,
+    borderColor: 'rgba(252,76,2,0.2)',
+    backgroundColor: 'rgba(252,76,2,0.05)',
+    paddingHorizontal: 17,
+    paddingVertical: 17,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  profileVerifiedIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(252,76,2,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileVerifiedTextWrap: {
+    flex: 1,
+  },
+  profileVerifiedTitle: {
+    color: '#101828',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 21,
+  },
+  profileVerifiedSub: {
+    color: '#4a5565',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  profileCard: {
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.62)',
+    overflow: 'hidden',
+  },
+  profileCardHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1.162,
+    borderBottomColor: '#f3f4f6',
+  },
+  profileCardTitle: {
+    color: '#101828',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  profileRowsWrap: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 16,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  profileRowLabel: {
+    color: '#4a5565',
+    fontSize: 13,
+    lineHeight: 19.5,
+  },
+  profileRowValue: {
+    color: '#101828',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 21,
+    textAlign: 'right',
+  },
+  profileInfoCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: 1.162,
+    borderColor: 'rgba(252,76,2,0.2)',
+    backgroundColor: 'rgba(252,76,2,0.05)',
+    paddingHorizontal: 17,
+    paddingVertical: 17,
+  },
+  profileInfoText: {
+    flex: 1,
+    color: '#364153',
+    fontSize: 12,
+    lineHeight: 19.5,
+  },
+  profileToastWrap: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 80,
+    alignItems: 'center',
+  },
+  profileToast: {
+    minWidth: 240,
+    borderRadius: 8,
+    borderWidth: 1.162,
+    borderColor: '#bffcd9',
+    backgroundColor: '#ecfdf3',
+    paddingHorizontal: 13,
+    paddingVertical: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  profileToastIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#008a2e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileToastText: {
+    color: '#008a2e',
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 19.5,
+  },
+  profileOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  profileBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  profileModalScroll: {
+    width: '100%',
+    maxHeight: '90%',
+  },
+  profileModalScrollContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexGrow: 1,
+  },
+  profileModal: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 50,
+    shadowOffset: { width: 0, height: 25 },
+    elevation: 8,
+  },
+  profileModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1.162,
+    borderBottomColor: '#f3f4f6',
+  },
+  profileModalTitle: {
+    flex: 1,
+    color: '#101828',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 27,
+  },
+  profileModalClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileModalBody: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 16,
+  },
+  modalField: {
+    gap: 8,
+  },
+  modalFieldLabel: {
+    color: '#364153',
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 19.5,
+  },
+  modalFieldInput: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1.162,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    color: '#0a0a0a',
+    fontSize: 14,
+  },
+  modalUploadField: {
+    gap: 8,
+  },
+  modalUploadLabel: {
+    color: '#364153',
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 19.5,
+  },
+  modalUpload: {
+    height: 136,
+    borderRadius: 12,
+    borderWidth: 1.162,
+    borderColor: '#d1d5dc',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 24,
+  },
+  modalUploadText: {
+    color: '#364153',
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  modalUploadLink: {
+    color: '#fc4c02',
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 24,
+  },
+  modalUploadHint: {
+    color: '#6a7282',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  modalNotice: {
+    borderRadius: 12,
+    backgroundColor: '#fff3e0',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  modalNoticeText: {
+    color: '#364153',
+    fontSize: 11,
+    lineHeight: 18,
+  },
+  profileModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  profileModalCancel: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileModalCancelText: {
+    color: '#364153',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 21,
+  },
+  profileModalSubmit: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#fc4c02',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  profileModalSubmitText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 21,
   },
 });

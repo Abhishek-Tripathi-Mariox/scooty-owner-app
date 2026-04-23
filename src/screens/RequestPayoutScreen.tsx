@@ -1,10 +1,39 @@
 import React from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
-import { COLORS, SPACING } from '../constants/theme';
+import {
+  ArrowLeftIcon,
+  CheckCircleIcon,
+  ClockIcon,
+} from '../components/OwnerIcons';
+import { COLORS } from '../constants/theme';
 import { Bank, PayoutItem } from '../services/ownerApi';
 import { formatCurrency, formatShortDate } from '../utils/format';
+
+function GradientHeader() {
+  return (
+    <Svg width="100%" height="100%">
+      <Defs>
+        <LinearGradient id="payoutBalanceGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <Stop offset="0%" stopColor="#fc4c02" stopOpacity={1} />
+          <Stop offset="100%" stopColor="#ff7a45" stopOpacity={1} />
+        </LinearGradient>
+      </Defs>
+      <Rect width="100%" height="100%" fill="url(#payoutBalanceGrad)" />
+    </Svg>
+  );
+}
 
 function HistoryItem({
   amount,
@@ -15,16 +44,21 @@ function HistoryItem({
   date: string;
   status: string;
 }) {
+  const isProcessing = status.toLowerCase() === 'processing';
   return (
     <View style={styles.historyItem}>
-      <View style={styles.historyIcon}>
-        <Text style={styles.historyIconText}>✓</Text>
+      <View style={styles.historyIconWrap}>
+        {isProcessing ? (
+          <ClockIcon size={20} color="#64748b" />
+        ) : (
+          <CheckCircleIcon size={20} color="#22c55e" />
+        )}
       </View>
       <View style={styles.historyBody}>
         <Text style={styles.historyAmount}>{amount}</Text>
         <Text style={styles.historyDate}>{date}</Text>
       </View>
-      <Text style={styles.historyStatus}>{status}</Text>
+      <Text style={styles.historyStatus}>{status.toLowerCase()}</Text>
     </View>
   );
 }
@@ -50,63 +84,90 @@ export function RequestPayoutScreen({
   loading?: boolean;
   onTabPress: (tab: TabKey) => void;
 }) {
+  const accountMask = bank?.accountNumber
+    ? `•••• •••• •••• ${bank.accountNumber.slice(-4)}`
+    : 'No bank details';
+
   return (
     <View style={styles.root}>
-      <AppBackground />
+      <AppBackground variant="auth" />
+
+      <View style={styles.topbar}>
+        <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
+          <ArrowLeftIcon size={24} color="#101828" />
+        </Pressable>
+        <Text style={styles.heading}>Request payout</Text>
+      </View>
+
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          automaticallyAdjustKeyboardInsets
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Pressable onPress={onBack} style={styles.back}>
-              <Text style={styles.backText}>←</Text>
-            </Pressable>
-            <Text style={styles.heading}>Request payout</Text>
-          </View>
-
           <View style={styles.balanceCard}>
+            <View style={StyleSheet.absoluteFill}>
+              <GradientHeader />
+            </View>
             <Text style={styles.balanceLabel}>Available Balance</Text>
             <Text style={styles.balanceValue}>{formatCurrency(availableBalance)}</Text>
           </View>
 
           <View style={styles.formCard}>
-            <Text style={styles.label}>Payout Amount</Text>
-            <TextInput
-              value={value}
-              onChangeText={onChangeValue}
-              keyboardType="number-pad"
-              placeholder="₹ Enter amount"
-              placeholderTextColor="#94a3b8"
-              style={styles.input}
-            />
-            <Text style={styles.helper}>Minimum: ₹100 - Processing time: 1-2 business days</Text>
-
-            <Text style={styles.label}>Bank Account</Text>
-            <View style={styles.bankRow}>
-              <View>
-                <Text style={styles.bankName}>{bank?.accountNumber ? `•••• •••• •••• ${bank.accountNumber.slice(-4)}` : 'No bank details'}</Text>
-                <Text style={styles.bankSub}>{bank?.bankName || bank?.upiId || 'Add bank details to continue'}</Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Payout Amount</Text>
+              <View style={styles.inputRow}>
+                <Text style={styles.inputCurrency}>₹</Text>
+                <TextInput
+                  value={value}
+                  onChangeText={onChangeValue}
+                  keyboardType="number-pad"
+                  placeholder="Enter amount"
+                  placeholderTextColor="#64748b"
+                  style={styles.input}
+                />
               </View>
-              <Text style={styles.change}>Verified</Text>
+              <Text style={styles.helper}>
+                Minimum: ₹100 • Processing time: 1-2 business days
+              </Text>
+            </View>
+
+            <View style={styles.bankCard}>
+              <Text style={styles.bankLabel}>Bank Account</Text>
+              <View style={styles.bankRow}>
+                <View style={styles.bankTextWrap}>
+                  <Text style={styles.bankNumber}>{accountMask}</Text>
+                  <Text style={styles.bankName}>{bank?.bankName || 'Add bank details'}</Text>
+                </View>
+                <Pressable>
+                  <Text style={styles.change}>Change</Text>
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.quickAmounts}>
               {['1000', '5000', '10000'].map((amount) => (
-                <Pressable key={amount} style={styles.amountChip} onPress={() => onChangeValue(amount)}>
+                <Pressable
+                  key={amount}
+                  style={styles.amountChip}
+                  onPress={() => onChangeValue(amount)}
+                >
                   <Text style={styles.amountChipText}>{formatCurrency(Number(amount))}</Text>
                 </Pressable>
               ))}
             </View>
 
-            <Pressable style={styles.requestButton} onPress={onSubmit}>
-              <Text style={styles.requestButtonText}>{loading ? 'Submitting...' : 'Request Payout'}</Text>
+            <Pressable
+              style={[styles.requestButton, loading && styles.requestButtonDisabled]}
+              onPress={onSubmit}
+              disabled={loading}
+            >
+              <Text style={styles.requestButtonText}>
+                {loading ? 'Submitting...' : 'Request Payout'}
+              </Text>
             </Pressable>
           </View>
 
@@ -116,18 +177,23 @@ export function RequestPayoutScreen({
               <HistoryItem
                 key={item._id}
                 amount={formatCurrency(item.amount)}
-                date={`${formatShortDate(item.createdAt)} •••• ${item.bankSnapshot?.accountNumberLast4 || '----'}`}
-                status={item.status.toLowerCase()}
+                date={`${formatShortDate(item.createdAt)} • •••• ${
+                  item.bankSnapshot?.accountNumberLast4 || '----'
+                }`}
+                status={item.status}
               />
             ))
           ) : (
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>No payouts yet</Text>
-              <Text style={styles.emptyText}>Your payout requests will show up here once you submit one.</Text>
+              <Text style={styles.emptyText}>
+                Your payout requests will show up here once you submit one.
+              </Text>
             </View>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
       <BottomTabs active="home" onTabPress={onTabPress} />
     </View>
   );
@@ -136,104 +202,235 @@ export function RequestPayoutScreen({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
-  content: { paddingHorizontal: SPACING.screenX, paddingTop: 18, paddingBottom: 16 },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  back: { width: 28, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  backText: { fontSize: 24, color: COLORS.textPrimary },
-  heading: { fontSize: 19, fontWeight: '900', color: COLORS.textPrimary },
-  balanceCard: {
-    backgroundColor: COLORS.button,
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 12,
-  },
-  balanceLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 12, textAlign: 'center' },
-  balanceValue: { color: '#fff', fontSize: 28, fontWeight: '900', textAlign: 'center', marginTop: 6 },
-  formCard: {
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.72)',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    padding: 14,
-  },
-  label: { fontSize: 12, color: COLORS.textPrimary, fontWeight: '800', marginTop: 8, marginBottom: 6 },
-  input: {
-    height: 40,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    backgroundColor: COLORS.inputBg,
-    paddingHorizontal: 12,
-    color: COLORS.textPrimary,
-  },
-  helper: { marginTop: 6, color: COLORS.textMuted, fontSize: 10, lineHeight: 14 },
-  bankRow: {
-    marginTop: 4,
-    borderRadius: 12,
-    padding: 12,
-    backgroundColor: 'rgba(255,255,255,0.68)',
+  topbar: {
+    height: 56,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ece3de',
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255,255,255,0.26)',
+    gap: 12,
   },
-  bankName: { fontSize: 13, color: COLORS.textPrimary, fontWeight: '800' },
-  bankSub: { marginTop: 2, color: COLORS.textSecondary, fontSize: 11 },
-  change: { color: '#22c55e', fontSize: 12, fontWeight: '800' },
-  quickAmounts: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
-  amountChip: {
-    width: '31%',
-    height: 36,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.76)',
-    borderWidth: 1,
-    borderColor: COLORS.line,
+  back: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  amountChipText: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '700' },
-  requestButton: {
-    marginTop: 14,
-    height: 42,
+  heading: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#101828',
+    lineHeight: 28,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 24,
+  },
+  balanceCard: {
+    borderRadius: 12,
+    height: 116,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    overflow: 'hidden',
+    alignItems: 'center',
+  },
+  balanceLabel: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  balanceValue: {
+    color: '#fff',
+    fontSize: 36,
+    fontWeight: '700',
+    lineHeight: 40,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  formCard: {
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    gap: 24,
+  },
+  fieldGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    color: '#0f172a',
+    fontWeight: '500',
+    lineHeight: 14,
+  },
+  inputRow: {
+    height: 56,
     borderRadius: 10,
+    borderWidth: 1.162,
+    borderColor: '#e2e8f0',
+    backgroundColor: 'rgba(255,255,255,0.34)',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inputCurrency: {
+    color: '#64748b',
+    fontSize: 16,
+    lineHeight: 24,
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    color: '#0f172a',
+    fontSize: 20,
+    paddingVertical: 0,
+  },
+  helper: {
+    color: '#64748b',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  bankCard: {
+    borderRadius: 16,
+    backgroundColor: 'rgba(241,245,249,0.5)',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  bankLabel: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  bankRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  bankTextWrap: {
+    flex: 1,
+  },
+  bankNumber: {
+    color: '#0f172a',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  bankName: {
+    color: '#64748b',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  change: {
+    color: '#22c55e',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  quickAmounts: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  amountChip: {
+    flex: 1,
+    height: 46,
+    borderRadius: 16,
+    borderWidth: 1.162,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  amountChipText: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  requestButton: {
+    height: 48,
+    borderRadius: 16,
     backgroundColor: '#22c55e',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  requestButtonText: { color: '#fff', fontSize: 13, fontWeight: '800' },
-  sectionTitle: { marginTop: 16, marginBottom: 10, color: COLORS.textPrimary, fontSize: 15, fontWeight: '900' },
+  requestButtonDisabled: {
+    opacity: 0.6,
+  },
+  requestButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  sectionTitle: {
+    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 28,
+  },
   historyItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.74)',
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    padding: 12,
-    marginBottom: 10,
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
   },
-  historyIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#eef7ee',
+  historyIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(34,197,94,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
   },
-  historyIconText: { color: '#16a34a', fontWeight: '900' },
   historyBody: { flex: 1 },
-  historyAmount: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '800' },
-  historyDate: { marginTop: 4, color: COLORS.textSecondary, fontSize: 11 },
-  historyStatus: { fontSize: 11, color: COLORS.textPrimary, fontWeight: '800' },
+  historyAmount: {
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  historyDate: {
+    marginTop: 4,
+    color: '#64748b',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  historyStatus: {
+    color: '#0f172a',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
+  },
   empty: {
     padding: 16,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.74)',
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: 'rgba(255,255,255,0.62)',
   },
-  emptyTitle: { color: COLORS.textPrimary, fontSize: 14, fontWeight: '900' },
-  emptyText: { marginTop: 6, color: COLORS.textSecondary, fontSize: 12, lineHeight: 17 },
+  emptyTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  emptyText: {
+    marginTop: 6,
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
+  },
 });

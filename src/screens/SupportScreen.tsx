@@ -1,320 +1,361 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { PageFrame } from '../components/PageFrame';
-import { COLORS } from '../constants/theme';
-import { SupportFaq, SupportTicket } from '../services/ownerApi';
-import { formatShortDate } from '../utils/format';
+import React, { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { AppBackground } from '../components/AppBackground';
+import { BottomTabs } from '../components/BottomTabs';
+import { GradientButton } from '../components/GradientButton';
+import {
+  ArrowLeftIcon,
+  ChevronDownIcon,
+  MailIcon,
+  MessageIcon,
+  PhoneCallIcon,
+  SendIcon,
+} from '../components/OwnerIcons';
+import { SupportFaq } from '../services/ownerApi';
 
-function FaqItem({ question, answer }: { question: string; answer?: string }) {
+function GradientHeaderBg() {
   return (
-    <View style={styles.faqItem}>
-      <View style={styles.faqCopy}>
-        <Text style={styles.faqText}>{question}</Text>
-        {answer ? <Text style={styles.faqAnswer}>{answer}</Text> : null}
-      </View>
-      <Text style={styles.faqArrow}>⌄</Text>
-    </View>
+    <Svg width="100%" height="100%">
+      <Defs>
+        <LinearGradient id="supportHeaderGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <Stop offset="0%" stopColor="#fc4c02" stopOpacity={1} />
+          <Stop offset="100%" stopColor="#ff7a45" stopOpacity={1} />
+        </LinearGradient>
+      </Defs>
+      <Rect width="100%" height="100%" fill="url(#supportHeaderGrad)" rx={32} ry={32} />
+    </Svg>
   );
 }
 
-function RecentTicketItem({ ticket }: { ticket: SupportTicket }) {
-  const status = (ticket.status || 'open').toLowerCase();
-  const statusLabel = status.replace(/_/g, ' ');
-  const statusStyle =
-    status === 'resolved'
-      ? styles.ticketStatusResolved
-      : status === 'open'
-        ? styles.ticketStatusOpen
-        : styles.ticketStatusPending;
-
+function QuickAction({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onPress?: () => void;
+}) {
   return (
-    <View style={styles.recentTicketItem}>
-      <View style={styles.recentTicketIcon}>
-        <Text style={styles.recentTicketIconText}>•</Text>
+    <Pressable style={styles.quickAction} onPress={onPress}>
+      <View style={styles.quickActionIconCircle}>{icon}</View>
+      <Text style={styles.quickActionLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function FaqItem({ question, answer }: { question: string; answer?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Pressable style={styles.faqItem} onPress={() => setOpen((v) => !v)}>
+      <View style={styles.faqTopRow}>
+        <Text style={styles.faqText}>{question}</Text>
+        <ChevronDownIcon size={20} color="#64748b" />
       </View>
-      <View style={styles.recentTicketCopy}>
-        <Text style={styles.recentTicketTitle} numberOfLines={1}>
-          {ticket.subject || 'Support ticket'}
-        </Text>
-        <Text style={styles.recentTicketMeta} numberOfLines={1}>
-          {formatShortDate(ticket.createdAt) || 'Recently submitted'}
-        </Text>
-      </View>
-      <View style={[styles.ticketStatusPill, statusStyle]}>
-        <Text style={styles.ticketStatusText}>{statusLabel}</Text>
-      </View>
-    </View>
+      {open && answer ? <Text style={styles.faqAnswer}>{answer}</Text> : null}
+    </Pressable>
   );
 }
 
 export function SupportScreen({
   onBack,
   faqs = [],
-  tickets = [],
   subject,
   message,
   onChangeSubject,
   onChangeMessage,
   onSubmitTicket,
   loading = false,
-}: {
+  }: {
   onBack: () => void;
   faqs?: SupportFaq[];
-  tickets?: SupportTicket[];
+  tickets?: unknown[];
   subject: string;
   message: string;
   onChangeSubject: (value: string) => void;
   onChangeMessage: (value: string) => void;
   onSubmitTicket: () => void;
   loading?: boolean;
-}) {
+  }) {
   return (
-    <PageFrame
-      title="Support"
-      onBack={onBack}
-      topRight={<Text style={styles.topRightText}>Call</Text>}
-      scroll
-    >
-      <View style={styles.hero}>
-        <View style={styles.heroAction}>
-          <View style={styles.heroIconWrap}>
-            <Text style={styles.heroIcon}>📞</Text>
-          </View>
-          <Text style={styles.heroLabel}>Call</Text>
-        </View>
-        <View style={styles.heroAction}>
-          <View style={styles.heroIconWrap}>
-            <Text style={styles.heroIcon}>✉</Text>
-          </View>
-          <Text style={styles.heroLabel}>Email</Text>
-        </View>
-        <View style={styles.heroAction}>
-          <View style={styles.heroIconWrap}>
-            <Text style={styles.heroIcon}>💬</Text>
-          </View>
-          <Text style={styles.heroLabel}>Chat</Text>
-        </View>
-      </View>
+    <View style={styles.root}>
+      <AppBackground variant="auth" />
 
-      <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-      {(faqs.length > 0 ? faqs : [{ id: 'fallback', question: 'How do I add a new vehicle?', answer: '' }]).map(
-        (item) => (
-          <FaqItem key={item.id} question={item.question} answer={item.answer} />
-        ),
-      )}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <View style={StyleSheet.absoluteFill}>
+              <GradientHeaderBg />
+            </View>
+            <View style={styles.headerTopRow}>
+              <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
+                <ArrowLeftIcon size={24} color="#ffffff" />
+              </Pressable>
+              <Text style={styles.headerTitle}>Support</Text>
+            </View>
+            <View style={styles.quickActionsRow}>
+              <QuickAction icon={<PhoneCallIcon size={20} color="#fc4c02" />} label="Call" />
+              <QuickAction icon={<MailIcon size={20} color="#fc4c02" />} label="Email" />
+              <QuickAction icon={<MessageIcon size={20} color="#fc4c02" />} label="Chat" />
+            </View>
+          </View>
 
-      <View style={styles.ticketCard}>
-        <Text style={styles.ticketTitle}>Raise a Ticket</Text>
-        <Text style={styles.ticketSubtitle}>Tell us what happened and we’ll get back to you quickly.</Text>
-        <TextInput
-          value={subject}
-          onChangeText={onChangeSubject}
-          placeholder="Brief description of your issue"
-          placeholderTextColor="#9ca3af"
-          style={styles.input}
-        />
-        <TextInput
-          value={message}
-          onChangeText={onChangeMessage}
-          placeholder="Describe your issue in detail..."
-          placeholderTextColor="#9ca3af"
-          style={[styles.input, styles.messageInput]}
-          multiline
-        />
-        <Pressable style={styles.button} onPress={onSubmitTicket}>
-          <Text style={styles.buttonText}>{loading ? 'Submitting...' : 'Submit Ticket'}</Text>
-        </Pressable>
-      </View>
+          <View style={styles.body}>
+            <View>
+              <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+              <View style={styles.faqList}>
+                {faqs.length > 0 ? (
+                  faqs.map((item) => (
+                    <FaqItem key={item.id} question={item.question} answer={item.answer} />
+                  ))
+                ) : (
+                  <View style={styles.emptyFaqCard}>
+                    <Text style={styles.emptyFaqTitle}>No FAQs available yet</Text>
+                    <Text style={styles.emptyFaqText}>
+                      The support team has not published any FAQ entries for this account yet.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
 
-      <View style={styles.footerCard}>
-        <Text style={styles.footerTitle}>Recent Tickets</Text>
-        {tickets.length > 0 ? (
-          tickets.slice(0, 3).map((ticket) => <RecentTicketItem key={ticket._id} ticket={ticket} />)
-        ) : (
-          <Text style={styles.footerText}>No support tickets yet.</Text>
-        )}
-      </View>
-    </PageFrame>
+            <View style={styles.ticketCard}>
+              <Text style={styles.sectionTitle}>Raise a Ticket</Text>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Subject</Text>
+                <TextInput
+                  value={subject}
+                  onChangeText={onChangeSubject}
+                  placeholder="Brief description of your issue"
+                  placeholderTextColor="#64748b"
+                  style={styles.input}
+                />
+              </View>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Message</Text>
+                <TextInput
+                  value={message}
+                  onChangeText={onChangeMessage}
+                  placeholder="Describe your issue in detail..."
+                  placeholderTextColor="#64748b"
+                  style={[styles.input, styles.messageInput]}
+                  multiline
+                  textAlignVertical="top"
+                />
+              </View>
+              <GradientButton
+                label={loading ? 'Submitting...' : 'Submit Ticket'}
+                onPress={onSubmitTicket}
+                disabled={loading}
+                height={48}
+                radius={12}
+                leftIcon={<SendIcon size={16} color="#ffffff" />}
+              />
+            </View>
+
+            <View style={styles.infoCard}>
+              <Text style={styles.infoTitle}>24/7 Support Available</Text>
+              <Text style={styles.infoText}>
+                Our support team is available round the clock to help you with any queries or issues.
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <BottomTabs active="profile" onTabPress={() => undefined} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  topRightText: { color: COLORS.button, fontSize: 12, fontWeight: '900', letterSpacing: 0.2 },
-  hero: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#ff6a1f',
-    borderRadius: 26,
-    padding: 12,
-    marginBottom: 14,
-    shadowColor: '#ff641c',
-    shadowOpacity: 0.24,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
+  root: { flex: 1, backgroundColor: 'transparent' },
+  flex: { flex: 1 },
+  scrollContent: {
+    paddingBottom: 24,
   },
-  heroAction: {
-    width: '31%',
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
+    gap: 24,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  back: {
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 16,
-    paddingVertical: 14,
   },
-  heroIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
+  headerTitle: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 32,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  quickAction: {
+    flex: 1,
+    height: 96,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    marginBottom: 7,
+    gap: 8,
   },
-  heroIcon: { fontSize: 17 },
-  heroLabel: { color: '#fff', fontSize: 12, fontWeight: '800' },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: COLORS.textPrimary,
-    marginBottom: 10,
-  },
-  faqItem: {
-    minHeight: 58,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    shadowColor: '#d9b7ab',
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  faqCopy: { flex: 1, paddingRight: 10 },
-  faqText: { color: COLORS.textPrimary, fontSize: 12.5, fontWeight: '800', lineHeight: 17 },
-  faqAnswer: { marginTop: 4, color: COLORS.textSecondary, fontSize: 11, lineHeight: 16 },
-  faqArrow: { color: COLORS.textSecondary, fontSize: 16, marginLeft: 10, marginTop: 2 },
-  ticketCard: {
-    marginTop: 12,
+  quickActionIconCircle: {
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
-    padding: 16,
-    shadowColor: '#d9b7ab',
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  ticketTitle: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '900' },
-  ticketSubtitle: {
-    marginTop: 4,
-    marginBottom: 12,
-    color: COLORS.textSecondary,
-    fontSize: 11.5,
+  quickActionLabel: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '500',
     lineHeight: 16,
   },
-  input: {
-    minHeight: 44,
-    borderRadius: 14,
+  body: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    gap: 24,
+  },
+  sectionTitle: {
+    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 28,
+    marginBottom: 12,
+  },
+  faqList: {
+    gap: 12,
+  },
+  emptyFaqCard: {
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.4)',
     borderWidth: 1,
-    borderColor: '#e5ddd9',
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: COLORS.textPrimary,
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 6,
+  },
+  emptyFaqTitle: {
+    color: '#0f172a',
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  emptyFaqText: {
+    color: '#64748b',
     fontSize: 13,
-    marginBottom: 10,
+    lineHeight: 20,
   },
-  messageInput: { minHeight: 98, textAlignVertical: 'top' },
-  button: {
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: COLORS.button,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#ff641c',
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  buttonText: { color: '#fff', fontSize: 13, fontWeight: '800', letterSpacing: 0.2 },
-  footerCard: {
-    marginTop: 12,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.78)',
+  faqItem: {
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    padding: 14,
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  footerTitle: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '900', marginBottom: 10 },
-  footerText: { color: COLORS.textSecondary, fontSize: 11, lineHeight: 16 },
-  recentTicketItem: {
+  faqTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  recentTicketIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#fff4ef',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  recentTicketIconText: {
-    color: COLORS.button,
-    fontSize: 18,
-    fontWeight: '900',
-    marginTop: -4,
-  },
-  recentTicketCopy: {
+  faqText: {
     flex: 1,
-    paddingRight: 8,
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 24,
   },
-  recentTicketTitle: {
-    color: COLORS.textPrimary,
-    fontSize: 12.5,
-    fontWeight: '800',
+  faqAnswer: {
+    marginTop: 8,
+    color: '#64748b',
+    fontSize: 14,
+    lineHeight: 20,
   },
-  recentTicketMeta: {
-    marginTop: 3,
-    color: COLORS.textSecondary,
-    fontSize: 10.5,
-  },
-  ticketStatusPill: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+  ticketCard: {
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    gap: 16,
   },
-  ticketStatusText: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
+  fieldGroup: {
+    gap: 8,
   },
-  ticketStatusOpen: {
-    backgroundColor: 'rgba(255, 244, 239, 0.95)',
-    borderColor: '#ffd7c8',
+  label: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 14,
   },
-  ticketStatusPending: {
-    backgroundColor: 'rgba(255, 248, 233, 0.95)',
-    borderColor: '#f8dca6',
+  input: {
+    minHeight: 36,
+    borderRadius: 10,
+    borderWidth: 1.162,
+    borderColor: '#e2e8f0',
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: '#0f172a',
+    fontSize: 16,
   },
-  ticketStatusResolved: {
-    backgroundColor: 'rgba(236, 253, 245, 0.95)',
-    borderColor: '#b7ebcc',
+  messageInput: {
+    minHeight: 64,
+  },
+  infoCard: {
+    borderRadius: 16,
+    borderWidth: 1.162,
+    borderColor: '#e2e8f0',
+    paddingHorizontal: 17,
+    paddingVertical: 17,
+    gap: 8,
+  },
+  infoTitle: {
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  infoText: {
+    color: '#64748b',
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

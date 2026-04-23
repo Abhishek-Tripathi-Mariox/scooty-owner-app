@@ -1,9 +1,26 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
-import { PageFrame } from '../components/PageFrame';
-import { ProgressBar } from '../components/ProgressBar';
-import { COLORS, SPACING } from '../constants/theme';
+import { GradientButton } from '../components/GradientButton';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CameraIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  UploadArrowIcon,
+} from '../components/OwnerIcons';
+import { COLORS } from '../constants/theme';
 import { StationItem, type KycUploadFile } from '../services/ownerApi';
 
 function Field({
@@ -11,11 +28,13 @@ function Field({
   placeholder,
   value,
   onChangeText,
+  autoCapitalize,
 }: {
   label: string;
   placeholder: string;
   value: string;
   onChangeText: (value: string) => void;
+  autoCapitalize?: 'none' | 'characters' | 'sentences';
 }) {
   return (
     <View style={styles.field}>
@@ -24,9 +43,113 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94a3b8"
+        placeholderTextColor="#64748b"
+        autoCapitalize={autoCapitalize}
         style={styles.input}
       />
+    </View>
+  );
+}
+
+function UploadCard({
+  label,
+  hint,
+  fileName,
+  onPress,
+  iconVariant = 'camera',
+  height = 160,
+}: {
+  label: string;
+  hint: string;
+  fileName?: string;
+  onPress: () => void;
+  iconVariant?: 'camera' | 'upload';
+  height?: number;
+}) {
+  const selected = Boolean(fileName);
+  const iconColor = selected ? '#fc4c02' : '#64748b';
+  return (
+    <View style={styles.uploadSection}>
+      <Text style={styles.uploadSectionLabel}>{label}</Text>
+      <Pressable
+        style={[styles.uploadArea, { height }, selected && styles.uploadAreaSelected]}
+        onPress={onPress}
+      >
+        {iconVariant === 'upload' ? (
+          <UploadArrowIcon size={32} color={iconColor} />
+        ) : (
+          <CameraIcon size={40} color={iconColor} />
+        )}
+        <Text
+          style={[styles.uploadAreaText, selected && styles.uploadAreaTextSelected]}
+          numberOfLines={1}
+        >
+          {fileName || hint}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function StationDropdown({
+  stations,
+  selectedId,
+  onSelect,
+}: {
+  stations: StationItem[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const selected = stations.find((s) => s._id === selectedId);
+
+  return (
+    <View>
+      <Pressable style={styles.dropdown} onPress={() => setOpen((v) => !v)}>
+        <Text
+          style={[
+            styles.dropdownText,
+            !selected && styles.dropdownPlaceholder,
+          ]}
+          numberOfLines={1}
+        >
+          {selected?.name || 'Select Station'}
+        </Text>
+        <ChevronDownIcon size={20} color="#64748b" />
+      </Pressable>
+      {open ? (
+        <View style={styles.dropdownList}>
+          {stations.length === 0 ? (
+            <Text style={styles.dropdownEmpty}>No stations available yet</Text>
+          ) : (
+            stations.map((station) => {
+              const isSelected = station._id === selectedId;
+              return (
+                <Pressable
+                  key={station._id}
+                  style={[styles.dropdownOption, isSelected && styles.dropdownOptionActive]}
+                  onPress={() => {
+                    onSelect(station._id);
+                    setOpen(false);
+                  }}
+                >
+                  <View style={styles.dropdownOptionTextWrap}>
+                    <Text style={styles.dropdownOptionTitle}>
+                      {station.name || 'Unnamed station'}
+                    </Text>
+                    {station.address || station.city ? (
+                      <Text style={styles.dropdownOptionMeta}>
+                        {station.address || station.city}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {isSelected ? <CheckIcon size={16} color="#fc4c02" /> : null}
+                </Pressable>
+              );
+            })
+          )}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -80,21 +203,44 @@ export function AddVehicleScreen({
       insuranceDocument,
   );
 
+  const canContinueStep1 =
+    form.modelName.trim().length > 0 &&
+    form.registrationNumber.trim().length > 0 &&
+    form.chassisNumber.trim().length > 0;
+  const canContinueStep2 = Boolean(frontPhoto && sidePhoto);
+  const canContinueStep3 = Boolean(rcDocument && insuranceDocument);
+
   return (
     <View style={styles.root}>
-      <PageFrame title="Add New Vehicle" subtitle={`Step ${step} of 4`} onBack={onBack} scroll={false}>
-        <View style={styles.body}>
-          <ProgressBar progress={progress} />
+      <AppBackground variant="auth" />
 
+      <View style={styles.topbar}>
+        <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
+          <ArrowLeftIcon size={24} color="#101828" />
+        </Pressable>
+        <Text style={styles.heading}>Add New Vehicle</Text>
+        <Text style={styles.stepLabel}>Step {step} of 4</Text>
+      </View>
+
+      <View style={styles.progressWrap}>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${progress}%` }]} />
+        </View>
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           {step === 1 ? (
-            <ScrollView
-              contentContainerStyle={styles.section}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              automaticallyAdjustKeyboardInsets
-            >
-              <Text style={styles.sectionTitle}>Vehicle Information</Text>
-              <View style={styles.card}>
+            <>
+              <View style={styles.formCard}>
+                <Text style={styles.sectionTitle}>Vehicle Information</Text>
                 <Field
                   label="Model Name"
                   placeholder="e.g., Ola S1 Pro"
@@ -105,7 +251,8 @@ export function AddVehicleScreen({
                   label="Registration Number"
                   placeholder="e.g., KA-01-AB-1234"
                   value={form.registrationNumber}
-                  onChangeText={(value) => onChangeForm({ registrationNumber: value })}
+                  onChangeText={(value) => onChangeForm({ registrationNumber: value.toUpperCase() })}
+                  autoCapitalize="characters"
                 />
                 <Field
                   label="Chassis Number"
@@ -114,258 +261,377 @@ export function AddVehicleScreen({
                   onChangeText={(value) => onChangeForm({ chassisNumber: value })}
                 />
               </View>
-              <Pressable style={styles.button} onPress={onNext}>
-                <Text style={styles.buttonText}>Continue  →</Text>
-              </Pressable>
-            </ScrollView>
+
+              <GradientButton
+                label="Continue"
+                onPress={onNext}
+                disabled={!canContinueStep1}
+                height={48}
+                radius={12}
+                rightIcon={<ArrowRightIcon size={16} color="#ffffff" />}
+                style={styles.cta}
+              />
+            </>
           ) : null}
 
           {step === 2 ? (
-            <ScrollView
-              contentContainerStyle={styles.section}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              automaticallyAdjustKeyboardInsets
-            >
+            <>
               <Text style={styles.sectionTitle}>Vehicle Photos</Text>
-              <UploadTile title="Front View" icon="📷" hint="Upload Front Photo" fileName={frontPhoto?.name} onPress={onPickFrontPhoto} />
-              <UploadTile title="Side View" icon="📷" hint="Upload Side Photo" fileName={sidePhoto?.name} onPress={onPickSidePhoto} />
-              <Pressable style={styles.button} onPress={onNext}>
-                <Text style={styles.buttonText}>Continue  →</Text>
-              </Pressable>
-            </ScrollView>
+              <UploadCard
+                label="Front View"
+                hint="Upload Front Photo"
+                fileName={frontPhoto?.name}
+                onPress={onPickFrontPhoto}
+              />
+              <UploadCard
+                label="Side View"
+                hint="Upload Side Photo"
+                fileName={sidePhoto?.name}
+                onPress={onPickSidePhoto}
+              />
+              <GradientButton
+                label="Continue"
+                onPress={onNext}
+                disabled={!canContinueStep2}
+                height={48}
+                radius={12}
+                rightIcon={<ArrowRightIcon size={16} color="#ffffff" />}
+                style={styles.cta}
+              />
+            </>
           ) : null}
 
           {step === 3 ? (
-            <ScrollView
-              contentContainerStyle={styles.section}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              automaticallyAdjustKeyboardInsets
-            >
+            <>
               <Text style={styles.sectionTitle}>Documents</Text>
-              <UploadTile title="RC (Registration Certificate)" icon="⇪" hint="Upload RC Document" fileName={rcDocument?.name} onPress={onPickRcDocument} />
-              <UploadTile title="Insurance" icon="⇪" hint="Upload Insurance" fileName={insuranceDocument?.name} onPress={onPickInsuranceDocument} />
-              <Pressable style={styles.button} onPress={onNext}>
-                <Text style={styles.buttonText}>Continue  →</Text>
-              </Pressable>
-            </ScrollView>
+              <UploadCard
+                label="RC (Registration Certificate)"
+                hint="Upload RC Document"
+                fileName={rcDocument?.name}
+                onPress={onPickRcDocument}
+                iconVariant="upload"
+                height={128}
+              />
+              <UploadCard
+                label="Insurance"
+                hint="Upload Insurance"
+                fileName={insuranceDocument?.name}
+                onPress={onPickInsuranceDocument}
+                iconVariant="upload"
+                height={128}
+              />
+              <GradientButton
+                label="Continue"
+                onPress={onNext}
+                disabled={!canContinueStep3}
+                height={48}
+                radius={12}
+                rightIcon={<ArrowRightIcon size={16} color="#ffffff" />}
+                style={styles.cta}
+              />
+            </>
           ) : null}
 
           {step === 4 ? (
-            <ScrollView
-              contentContainerStyle={styles.section}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              automaticallyAdjustKeyboardInsets
-            >
-              <Text style={styles.sectionTitle}>Assign Station</Text>
-              <View style={styles.card}>
-                <Text style={styles.label}>Select Station</Text>
-                {stations.length ? (
-                  <View style={styles.stationList}>
-                    {stations.map((station) => {
-                      const selected = form.stationId === station._id;
-                      return (
-                        <Pressable
-                          key={station._id}
-                          style={[styles.stationItem, selected && styles.stationItemSelected]}
-                          onPress={() => onChangeForm({ stationId: station._id })}
-                        >
-                          <View style={styles.stationItemTextWrap}>
-                            <Text style={styles.stationName}>{station.name || 'Unnamed station'}</Text>
-                            <Text style={styles.stationMeta}>
-                              {station.address || station.city || station._id}
-                            </Text>
-                          </View>
-                          <Text style={[styles.stationCheck, selected && styles.stationCheckSelected]}>
-                            {selected ? 'Selected' : 'Tap'}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                ) : (
-                  <View style={styles.emptyStationState}>
-                    <Text style={styles.emptyStationTitle}>No stations available yet</Text>
-                    <Text style={styles.emptyStationText}>
-                      Please wait for stations to load, or add one from the admin side.
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.noteBox}>
+            <>
+              <View style={styles.formCard}>
+                <Text style={styles.sectionTitle}>Assign Station</Text>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Select Station</Text>
+                  <StationDropdown
+                    stations={stations}
+                    selectedId={form.stationId}
+                    onSelect={(id) => onChangeForm({ stationId: id })}
+                  />
+                </View>
+
+                <View style={styles.noteCard}>
                   <Text style={styles.noteTitle}>📍 Note</Text>
                   <Text style={styles.noteText}>
-                    Your vehicle will be available for rides at the selected station once approved by admin.
+                    Your vehicle will be available for rides at this station once approved by admin.
                   </Text>
                 </View>
               </View>
 
-              <Pressable style={[styles.button, (!isReadyToSubmit || loading) && styles.buttonDisabled]} onPress={onNext} disabled={loading || !isReadyToSubmit}>
-                <Text style={styles.buttonText}>{loading ? 'Submitting...' : 'Submit for Approval  →'}</Text>
-              </Pressable>
+              <GradientButton
+                label={loading ? 'Submitting...' : 'Submit for Approval'}
+                onPress={onNext}
+                disabled={loading || !isReadyToSubmit}
+                height={48}
+                radius={12}
+                rightIcon={<ArrowRightIcon size={16} color="#ffffff" />}
+                style={styles.cta}
+              />
               {!isReadyToSubmit ? (
-                <Text style={styles.submitNote}>Upload all files and choose a station to continue.</Text>
+                <Text style={styles.submitNote}>
+                  Upload all files and choose a station to continue.
+                </Text>
               ) : null}
-
-              <View style={styles.toast}>
-                <Text style={styles.toastDot}>●</Text>
-                <Text style={styles.toastText}>Request sent for admin approval</Text>
-              </View>
-            </ScrollView>
+              {loading ? (
+                <View style={styles.toast}>
+                  <View style={styles.toastIconWrap}>
+                    <CheckIcon size={12} color="#ffffff" />
+                  </View>
+                  <Text style={styles.toastText}>Request sent for admin approval.</Text>
+                </View>
+              ) : null}
+            </>
           ) : null}
-        </View>
-      </PageFrame>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
       <BottomTabs active="home" onTabPress={onTabPress} />
     </View>
   );
 }
 
-function UploadTile({
-  title,
-  hint,
-  icon,
-  fileName,
-  onPress,
-}: {
-  title: string;
-  hint: string;
-  icon: string;
-  fileName?: string;
-  onPress: () => void;
-}) {
-  return (
-    <View style={styles.uploadWrap}>
-      <Text style={styles.uploadLabel}>{title}</Text>
-      <Pressable style={[styles.uploadTile, fileName ? styles.uploadTileSelected : null]} onPress={onPress}>
-        <Text style={styles.uploadIcon}>{fileName ? '✓' : icon}</Text>
-        <View style={styles.uploadCopy}>
-          <Text style={styles.uploadHint}>{fileName || hint}</Text>
-          {fileName ? <Text style={styles.uploadMeta}>Tap to replace</Text> : null}
-        </View>
-        <Text style={styles.uploadAction}>{fileName ? 'Uploaded' : 'Upload'}</Text>
-      </Pressable>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
-  body: { flex: 1, paddingTop: 12 },
-  section: { paddingBottom: 18 },
-  sectionTitle: { fontSize: 18, color: COLORS.textPrimary, fontWeight: '900', marginBottom: 12 },
-  card: {
-    borderRadius: 18,
-    padding: 14,
-    backgroundColor: 'rgba(255,255,255,0.72)',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+  root: { flex: 1, backgroundColor: 'transparent' },
+  flex: { flex: 1 },
+  topbar: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255,255,255,0.26)',
+    gap: 12,
   },
-  field: { marginBottom: 10 },
-  label: { marginBottom: 6, color: COLORS.textPrimary, fontSize: 12, fontWeight: '700' },
-  input: {
+  back: {
+    width: 40,
     height: 40,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    backgroundColor: COLORS.inputBg,
-    paddingHorizontal: 12,
-    color: COLORS.textPrimary,
-    fontSize: 13,
-  },
-  button: {
-    marginTop: 12,
-    height: 42,
-    borderRadius: 10,
-    backgroundColor: COLORS.button,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonDisabled: {
-    opacity: 0.55,
+  heading: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#101828',
+    lineHeight: 28,
   },
-  buttonText: { color: '#fff', fontSize: 13, fontWeight: '800' },
-  uploadWrap: { marginBottom: 12 },
-  uploadLabel: { fontSize: 12, color: COLORS.textPrimary, fontWeight: '700', marginBottom: 6 },
-  uploadTile: {
-    minHeight: 104,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.72)',
+  stepLabel: {
+    color: '#101828',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 24,
+  },
+  progressWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
+    backgroundColor: 'rgba(255,255,255,0.26)',
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#fc4c02',
+    borderRadius: 999,
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    gap: 24,
+  },
+  formCard: {
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    gap: 16,
   },
-  uploadTileSelected: {
-    borderColor: '#e0b8a8',
-    backgroundColor: 'rgba(255,247,243,0.9)',
+  sectionTitle: {
+    color: '#0f172a',
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 28,
+    marginBottom: 0,
   },
-  uploadIcon: { fontSize: 28, color: '#94a3b8', marginRight: 12, width: 28, textAlign: 'center' },
-  uploadCopy: { flex: 1 },
-  uploadHint: { fontSize: 12, color: COLORS.textPrimary, fontWeight: '700' },
-  uploadMeta: { fontSize: 11, color: COLORS.textSecondary, marginTop: 3 },
-  uploadAction: { fontSize: 12, color: COLORS.button, fontWeight: '800' },
-  stationList: { marginTop: 2 },
-  stationItem: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    backgroundColor: COLORS.inputBg,
+  field: {
+    gap: 8,
+  },
+  label: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 14,
+  },
+  input: {
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1.162,
+    borderColor: '#e2e8f0',
+    backgroundColor: 'rgba(255,255,255,0.45)',
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 0,
+    color: '#0f172a',
+    fontSize: 16,
+  },
+  uploadSection: {
+    gap: 8,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+  },
+  uploadSectionLabel: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 14,
+    marginBottom: 8,
+  },
+  uploadArea: {
+    borderRadius: 16,
+    borderWidth: 1.162,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  uploadAreaSelected: {
+    borderColor: '#fc4c02',
+    backgroundColor: 'rgba(255,244,239,0.5)',
+  },
+  uploadAreaText: {
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    paddingHorizontal: 16,
+  },
+  uploadAreaTextSelected: {
+    color: '#fc4c02',
+  },
+  cta: {
+    marginTop: 0,
+  },
+  dropdown: {
+    height: 48,
+    borderRadius: 16,
+    borderWidth: 1.162,
+    borderColor: '#e2e8f0',
+    backgroundColor: 'rgba(248,250,252,0.5)',
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
   },
-  stationItemSelected: {
-    borderColor: '#e0b8a8',
-    backgroundColor: 'rgba(255,247,243,0.92)',
+  dropdownText: {
+    flex: 1,
+    color: '#0f172a',
+    fontSize: 14,
+    lineHeight: 20,
+    marginRight: 8,
   },
-  stationItemTextWrap: { flex: 1, paddingRight: 10 },
-  stationName: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '800' },
-  stationMeta: { color: COLORS.textSecondary, fontSize: 11, marginTop: 3, lineHeight: 15 },
-  stationCheck: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '800' },
-  stationCheckSelected: { color: COLORS.button },
-  emptyStationState: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    backgroundColor: COLORS.inputBg,
-    padding: 12,
-    marginTop: 2,
-    marginBottom: 10,
+  dropdownPlaceholder: {
+    color: '#64748b',
   },
-  emptyStationTitle: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '800', marginBottom: 4 },
-  emptyStationText: { color: COLORS.textSecondary, fontSize: 11, lineHeight: 15 },
-  noteBox: {
-    marginTop: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,244,239,0.85)',
-    borderWidth: 1,
-    borderColor: '#ffd7c8',
-    padding: 12,
+  dropdownList: {
+    marginTop: 8,
+    borderRadius: 16,
+    borderWidth: 1.162,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+    overflow: 'hidden',
   },
-  noteTitle: { color: COLORS.button, fontWeight: '800', fontSize: 12, marginBottom: 6 },
-  noteText: { color: COLORS.textSecondary, fontSize: 12, lineHeight: 17 },
-  toast: {
-    marginTop: 14,
-    borderRadius: 8,
-    backgroundColor: '#e8fff0',
-    borderWidth: 1,
-    borderColor: '#bff2cf',
-    padding: 10,
+  dropdownOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
-  toastDot: { color: '#16a34a', marginRight: 8 },
-  toastText: { color: '#166534', fontSize: 12, fontWeight: '700' },
+  dropdownOptionActive: {
+    backgroundColor: 'rgba(255,244,239,0.8)',
+  },
+  dropdownOptionTextWrap: { flex: 1, paddingRight: 8 },
+  dropdownOptionTitle: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  dropdownOptionMeta: {
+    color: '#64748b',
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  dropdownEmpty: {
+    color: '#64748b',
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 14,
+  },
+  noteCard: {
+    borderRadius: 16,
+    borderWidth: 1.162,
+    borderColor: '#e2e8f0',
+    paddingHorizontal: 17,
+    paddingVertical: 17,
+    gap: 8,
+  },
+  noteTitle: {
+    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 27,
+  },
+  noteText: {
+    color: '#64748b',
+    fontSize: 14,
+    lineHeight: 20,
+  },
   submitNote: {
+    color: '#64748b',
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: 'center',
+  },
+  toast: {
     marginTop: 8,
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    lineHeight: 15,
+    borderRadius: 8,
+    borderWidth: 1.162,
+    borderColor: '#bffcd9',
+    backgroundColor: '#ecfdf3',
+    paddingHorizontal: 13,
+    paddingVertical: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  toastIconWrap: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#008a2e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toastText: {
+    color: '#008a2e',
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 20,
   },
 });

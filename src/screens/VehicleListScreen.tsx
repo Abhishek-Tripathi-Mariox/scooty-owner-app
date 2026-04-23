@@ -1,8 +1,24 @@
 import React, { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
-import { PageFrame } from '../components/PageFrame';
-import { COLORS } from '../constants/theme';
+import {
+  ArrowLeftIcon,
+  BatteryIcon,
+  BatteryLowIcon,
+  LocationPinIcon,
+  PlusIcon,
+  RupeeIcon,
+  SearchIcon,
+  StarIcon,
+} from '../components/OwnerIcons';
 import { StationItem, VehicleItem } from '../services/ownerApi';
 import { formatCurrency } from '../utils/format';
 
@@ -16,12 +32,18 @@ const FILTERS: Array<{ key: VehicleFilter; label: string }> = [
   { key: 'MAINTENANCE', label: 'Repair' },
 ];
 
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'Active',
+  IN_RIDE: 'In Ride',
+  CHARGING: 'Charging',
+  MAINTENANCE: 'Maintenance',
+  DRAFT: 'Draft',
+  PENDING: 'Pending',
+};
+
 export function VehicleListScreen({
   onBack,
   onOpenDetails,
-  onOpenProfile,
-  onOpenEarnings,
-  onOpenAlerts,
   onAddVehicle,
   onTabPress,
   vehicles = [],
@@ -38,201 +60,389 @@ export function VehicleListScreen({
   stations?: StationItem[];
 }) {
   const [selectedFilter, setSelectedFilter] = useState<VehicleFilter>('ALL');
-  const filtered = useMemo(
-    () => (selectedFilter === 'ALL' ? vehicles : vehicles.filter((vehicle) => vehicle.status === selectedFilter)),
-    [vehicles, selectedFilter],
-  );
-  const filterCounts = useMemo(
-    () =>
-      vehicles.reduce(
-        (acc, vehicle) => {
-          acc.ALL += 1;
-          if (vehicle.status === 'ACTIVE') acc.ACTIVE += 1;
-          if (vehicle.status === 'IN_RIDE') acc.IN_RIDE += 1;
-          if (vehicle.status === 'CHARGING') acc.CHARGING += 1;
-          if (vehicle.status === 'MAINTENANCE') acc.MAINTENANCE += 1;
-          return acc;
-        },
-        { ALL: 0, ACTIVE: 0, IN_RIDE: 0, CHARGING: 0, MAINTENANCE: 0 },
-      ),
-    [vehicles],
-  );
+  const [query, setQuery] = useState('');
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return vehicles.filter((v) => {
+      const statusMatch = selectedFilter === 'ALL' || v.status === selectedFilter;
+      if (!statusMatch) return false;
+      if (!needle) return true;
+      return (
+        (v.modelName || '').toLowerCase().includes(needle) ||
+        (v.registrationNumber || '').toLowerCase().includes(needle)
+      );
+    });
+  }, [vehicles, selectedFilter, query]);
 
   return (
     <View style={styles.root}>
-      <PageFrame
-        title="My Vehicles"
-        onBack={onBack}
-        topRight={<Text style={styles.add} onPress={onAddVehicle}>+ Add</Text>}
-        scroll={false}
-      >
-        <View style={styles.searchRow}>
-          <Text style={styles.searchIcon}>⌕</Text>
-          <TextInput placeholder="Search vehicles..." placeholderTextColor="#9ca3af" style={styles.searchInput} />
-        </View>
+      <AppBackground variant="auth" />
 
-        <View style={styles.filters}>
+      <View style={styles.topbar}>
+        <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
+          <ArrowLeftIcon size={24} color="#101828" />
+        </Pressable>
+        <Text style={styles.heading}>My Vehicles</Text>
+        <Pressable style={styles.addButton} onPress={onAddVehicle}>
+          <PlusIcon size={16} color="#fc4c02" />
+          <Text style={styles.addButtonText}>Add</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.searchWrap}>
+        <View style={styles.searchRow}>
+          <SearchIcon size={20} color="#64748b" />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search vehicles..."
+            placeholderTextColor="#64748b"
+            style={styles.searchInput}
+          />
+        </View>
+      </View>
+
+      <View style={styles.tabsShell}>
+        <View style={styles.tabsRow}>
           {FILTERS.map((filter) => {
             const isActive = filter.key === selectedFilter;
             return (
               <Pressable
                 key={filter.key}
                 onPress={() => setSelectedFilter(filter.key)}
-                style={[styles.filterChip, isActive && styles.filterActive]}
+                style={[styles.tab, isActive && styles.tabActive]}
               >
-                <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
-                  {filter.label} ({filterCounts[filter.key]})
+                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                  {filter.label}
                 </Text>
               </Pressable>
             );
           })}
         </View>
+      </View>
 
-        <ScrollView contentContainerStyle={styles.list}>
-          {filtered.length > 0 ? (
-            filtered.map((vehicle) => {
-              const stationName =
-                vehicle.station?.name ||
-                stations.find((station) => station._id === vehicle.stationId)?.name ||
-                vehicle.locationLabel ||
-                'Not assigned';
-              const thumbUrl = vehicle.photos?.frontUrl || vehicle.photos?.sideUrl;
+      <ScrollView
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+      >
+        {filtered.length > 0 ? (
+          filtered.map((vehicle) => {
+            const stationName =
+              vehicle.station?.name ||
+              stations.find((station) => station._id === vehicle.stationId)?.name ||
+              vehicle.locationLabel ||
+              '—';
+            const battery = vehicle.batteryPercent;
+            const isMaintenance = vehicle.status === 'MAINTENANCE';
+            const pillStyle = isMaintenance ? styles.statusPillMaintenance : styles.statusPill;
+            const pillTextStyle = isMaintenance ? styles.statusPillTextMaintenance : styles.statusPillText;
+            const statusLabel =
+              STATUS_LABELS[vehicle.status || ''] || vehicle.status || 'Draft';
 
-              return (
-                <Pressable key={vehicle._id} style={styles.card} onPress={() => onOpenDetails(vehicle._id)}>
-                  {thumbUrl ? (
-                    <Image source={{ uri: thumbUrl }} style={styles.vehicleThumbnail} resizeMode="cover" />
-                  ) : null}
-                  <View style={styles.cardHeader}>
-                    <View>
-                      <Text style={styles.vehicleName}>{vehicle.modelName || 'Vehicle'}</Text>
-                      <Text style={styles.vehicleReg}>{vehicle.registrationNumber || 'No registration number'}</Text>
-                    </View>
-                    <View style={styles.statusPill}>
-                      <Text style={styles.statusText}>{vehicle.status || 'DRAFT'}</Text>
-                    </View>
+            return (
+              <Pressable
+                key={vehicle._id}
+                style={styles.card}
+                onPress={() => onOpenDetails(vehicle._id)}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardHeaderLeft}>
+                    <Text style={styles.vehicleName} numberOfLines={1}>
+                      {vehicle.modelName || 'Vehicle'}
+                    </Text>
+                    <Text style={styles.vehicleReg} numberOfLines={1}>
+                      {vehicle.registrationNumber || '—'}
+                    </Text>
                   </View>
-                  <View style={styles.statsRow}>
-                    <VehicleStat label="Battery" value={vehicle.batteryPercent != null ? `${vehicle.batteryPercent}%` : 'N/A'} />
-                    <VehicleStat label="Station" value={stationName} />
+                  <View style={pillStyle}>
+                    <Text style={pillTextStyle}>{statusLabel}</Text>
                   </View>
-                  <View style={styles.statsRow}>
-                    <VehicleStat label="Earnings" value={formatCurrency((vehicle as any).earnings || 0)} />
-                    <VehicleStat label="Rating" value={(vehicle as any).rating ? String((vehicle as any).rating) : '—'} />
+                </View>
+
+                <View style={styles.statsGrid}>
+                  <View style={styles.statRow}>
+                    <VehicleStat
+                      icon={
+                        battery != null && battery <= 20 ? (
+                          <BatteryLowIcon size={16} color="#ef4444" />
+                        ) : (
+                          <BatteryIcon size={16} color="#64748b" />
+                        )
+                      }
+                      label="Battery"
+                      value={battery != null ? `${battery}%` : 'N/A'}
+                    />
+                    <VehicleStat
+                      icon={<LocationPinIcon size={16} color="#fc4c02" />}
+                      label="Station"
+                      value={stationName}
+                    />
                   </View>
-                </Pressable>
-              );
-            })
-          ) : (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>
-                {selectedFilter === 'ALL' ? 'No vehicles yet' : `No ${selectedFilter.toLowerCase().replace('_', ' ')} vehicles`}
-              </Text>
-              <Text style={styles.emptyText}>
-                {selectedFilter === 'ALL'
-                  ? 'Add your first scooty and submit it for approval.'
-                  : 'Try another filter or update the vehicle status from the detail screen.'}
-              </Text>
-            </View>
-          )}
-        </ScrollView>
-      </PageFrame>
-      <BottomTabs
-        active="scooty"
-        onTabPress={onTabPress}
-      />
+                  <View style={styles.statRow}>
+                    <VehicleStat
+                      icon={<RupeeIcon size={16} color="#64748b" />}
+                      label="Earnings"
+                      value={formatCurrency(vehicle.earnings || 0)}
+                    />
+                    <VehicleStat
+                      icon={<StarIcon size={16} color="#0f172a" />}
+                      label="Rating"
+                      value={vehicle.rating != null ? String(vehicle.rating) : '—'}
+                    />
+                  </View>
+                </View>
+              </Pressable>
+            );
+          })
+        ) : (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>
+              {selectedFilter === 'ALL'
+                ? 'No vehicles yet'
+                : `No ${selectedFilter.toLowerCase().replace('_', ' ')} vehicles`}
+            </Text>
+            <Text style={styles.emptyText}>
+              {selectedFilter === 'ALL'
+                ? 'Add your first scooty and submit it for approval.'
+                : 'Try another filter or update the vehicle status from the detail screen.'}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <BottomTabs active="scooty" onTabPress={onTabPress} />
     </View>
   );
 }
 
-function VehicleStat({ label, value }: { label: string; value: string }) {
+function VehicleStat({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
     <View style={styles.stat}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
+      <View style={styles.statIconWrap}>{icon}</View>
+      <View style={styles.statTextWrap}>
+        <Text style={styles.statLabel}>{label}</Text>
+        <Text style={styles.statValue} numberOfLines={1}>
+          {value}
+        </Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
-  add: {
-    color: COLORS.button,
-    fontSize: 12,
-    fontWeight: '800',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  searchRow: {
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    backgroundColor: COLORS.inputBg,
+  root: { flex: 1, backgroundColor: 'transparent' },
+  topbar: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255,255,255,0.26)',
+    gap: 12,
+  },
+  back: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heading: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#101828',
+    lineHeight: 28,
+  },
+  addButton: {
+    height: 32,
     paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  searchIcon: { fontSize: 14, color: '#9ca3af', marginRight: 8 },
-  searchInput: { flex: 1, color: COLORS.textPrimary, fontSize: 13, paddingVertical: 0 },
-  filters: { flexDirection: 'row', marginTop: 10, marginBottom: 10},
-  filterChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    marginRight: 8,
-    marginBottom: 8,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+  addButtonText: {
+    color: '#fc4c02',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
   },
-  filterActive: { backgroundColor: COLORS.button },
-  filterText: { fontSize: 10, color: COLORS.textPrimary },
-  filterTextActive: { color: '#fff', fontWeight: '800' },
-  list: { paddingBottom: 14 },
-  card: {
-    marginBottom: 10,
-    padding: 14,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.74)',
+  searchWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  searchRow: {
+    height: 48,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: 'rgba(0,0,0,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.43)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 10,
   },
-  vehicleThumbnail: {
-    width: '100%',
-    height: 140,
-    borderRadius: 14,
-    marginBottom: 12,
-    backgroundColor: COLORS.cardBorder,
+  searchInput: {
+    flex: 1,
+    color: '#0f172a',
+    fontSize: 16,
+    paddingVertical: 0,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  vehicleName: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '900' },
-  vehicleReg: { marginTop: 2, color: COLORS.textSecondary, fontSize: 11 },
+  tabsShell: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  tabsRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.62)',
+    padding: 2,
+  },
+  tab: {
+    flex: 1,
+    height: 29,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabActive: {
+    backgroundColor: '#ffffff',
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#0f172a',
+    lineHeight: 16,
+  },
+  tabTextActive: {
+    color: '#0f172a',
+    fontWeight: '600',
+  },
+  list: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 16,
+  },
+  card: {
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  cardHeaderLeft: {
+    flex: 1,
+  },
+  vehicleName: {
+    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 28,
+  },
+  vehicleReg: {
+    marginTop: 2,
+    color: '#64748b',
+    fontSize: 14,
+    lineHeight: 20,
+  },
   statusPill: {
-    backgroundColor: '#fff4ef',
+    borderWidth: 1.162,
+    borderColor: '#e2e8f0',
     borderRadius: 999,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingVertical: 4,
   },
-  statusText: { color: COLORS.button, fontSize: 10, fontWeight: '800' },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
-  stat: {
-    width: '48%',
-    padding: 10,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.66)',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+  statusPillText: {
+    color: '#0f172a',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
   },
-  statLabel: { fontSize: 10, color: COLORS.textSecondary },
-  statValue: { marginTop: 4, fontSize: 13, fontWeight: '900', color: COLORS.textPrimary },
+  statusPillMaintenance: {
+    borderWidth: 1.162,
+    borderColor: 'rgba(239,68,68,0.2)',
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  statusPillTextMaintenance: {
+    color: '#ef4444',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
+  },
+  statsGrid: {
+    gap: 16,
+  },
+  statRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  stat: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statIconWrap: {
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statTextWrap: {
+    flex: 1,
+  },
+  statLabel: {
+    color: '#64748b',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  statValue: {
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
   emptyCard: {
     padding: 16,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.74)',
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: 'rgba(255,255,255,0.62)',
   },
-  emptyTitle: { color: COLORS.textPrimary, fontSize: 14, fontWeight: '900' },
-  emptyText: { marginTop: 6, color: COLORS.textSecondary, fontSize: 12, lineHeight: 17 },
+  emptyTitle: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  emptyText: {
+    marginTop: 6,
+    color: '#64748b',
+    fontSize: 12,
+    lineHeight: 17,
+  },
 });

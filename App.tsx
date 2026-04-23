@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, NativeModules, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, AppState, Linking, NativeModules, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import DocumentPicker, {
   isCancel as isDocumentPickerCancel,
   types as DocumentPickerTypes,
@@ -118,6 +118,14 @@ const DEFAULT_SETTINGS: OwnerSettings = {
 
 const DEFAULT_KYC_FILES: KycUploadFiles = {};
 const AUTH_TOKEN_KEY = 'scooty_rental_owner_auth_token';
+
+const hasMeaningfulBankData = (bank: Bank | null) =>
+  Boolean(
+    bank &&
+      [bank.accountHolderName, bank.accountNumber, bank.bankName, bank.ifsc, bank.upiId, bank.fileUrl].some(
+        (value) => String(value || '').trim(),
+      ),
+  );
 const OwnerAuthStorage = NativeModules.OwnerAuthStorage as
   | {
       setItem?: (key: string, value: string) => Promise<void>;
@@ -145,7 +153,7 @@ const resolveMimeType = (mimeType: string | null | undefined, fileName: string, 
   return inferMimeType(fileName, fallback);
 };
 
-const OWNER_PUBLIC_BASE_URL = OWNER_API_BASE_URL.replace(/\/scooty\/v1\/api\/?$/, '');
+const OWNER_PUBLIC_BASE_URL = OWNER_API_BASE_URL.replace(/\/(?:scooty\/)?v1\/api\/?$/, '');
 
 const normalizeDocumentUrl = (url?: string | null) => {
   if (!url) return null;
@@ -247,6 +255,7 @@ export default function App() {
   const [vehicleFiles, setVehicleFiles] = useState<VehicleUploadFiles>(DEFAULT_VEHICLE_FILES);
   const [profilePhoto, setProfilePhoto] = useState<KycUploadFile | null>(DEFAULT_PROFILE_PHOTO);
   const [showBankEditModal, setShowBankEditModal] = useState(false);
+  const bankFormDirtyRef = useRef(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [kycFiles, setKycFiles] = useState<KycUploadFiles>(DEFAULT_KYC_FILES);
   const [kycRequestDocument, setKycRequestDocument] = useState<keyof KycUploadFiles | null>(null);
@@ -299,14 +308,17 @@ export default function App() {
     setCity(profile?.city || '');
     setStateName(profile?.state || '');
     setPincode(profile?.pincode || '');
-    setBankForm({
-      accountHolderName: profileBank?.accountHolderName || '',
-      accountNumber: profileBank?.accountNumber || '',
-      bankName: profileBank?.bankName || '',
-      ifsc: profileBank?.ifsc || '',
-      upiId: profileBank?.upiId || '',
-      bankFile: null,
-    });
+    if (!bankFormDirtyRef.current || hasMeaningfulBankData(profileBank)) {
+      setBankForm({
+        accountHolderName: profileBank?.accountHolderName || '',
+        accountNumber: profileBank?.accountNumber || '',
+        bankName: profileBank?.bankName || '',
+        ifsc: profileBank?.ifsc || '',
+        upiId: profileBank?.upiId || '',
+        bankFile: null,
+      });
+      bankFormDirtyRef.current = false;
+    }
     if (profile?.settings) {
       setSettings({
         ...DEFAULT_SETTINGS,
@@ -328,8 +340,8 @@ export default function App() {
       Alert.alert('Enter your full name');
       return false;
     }
-    if (!address.trim()) {
-      Alert.alert('Enter your address');
+    if (!email.trim() || !isValidEmail(email)) {
+      Alert.alert('Enter a valid email address');
       return false;
     }
     if (!city.trim()) {
@@ -396,7 +408,7 @@ export default function App() {
       Alert.alert('Enter a valid IFSC code');
       return false;
     }
-    if (step === 'bank-details-onboarding' && !bankForm.bankFile) {
+    if (step === 'bank-details-onboarding' && !bankForm.bankFile && !bank?.fileUrl) {
       Alert.alert('Upload passbook/cheque', 'Please upload your passbook or cheque before continuing.');
       return false;
     }
@@ -872,6 +884,7 @@ export default function App() {
 
   const handleKycSubmit = async () => {
     if (!token) return;
+    const originatingKycFlow = kycRequestOrigin;
     if (!kycRequestDocument) {
       if (!kycFiles.profilePhoto || !kycFiles.adharFile || !kycFiles.panFile) {
         Alert.alert('Select all documents', 'Please upload Aadhaar, PAN, and profile photo before submitting.');
@@ -889,7 +902,7 @@ export default function App() {
       setKycRequestDocument(null);
       setKycRequestOrigin(null);
       setOwner((current) => (current ? { ...current, kycStatus: 'PENDING' } : current));
-      if (kycRequestOrigin === 'documents') {
+      if (originatingKycFlow === 'documents') {
         await loadProfile(token);
         setStep('documents');
       } else {
@@ -949,6 +962,7 @@ export default function App() {
       const uri = response.fileCopyUri ?? response.uri ?? undefined;
       const type = resolveMimeType(response.type, fileName, 'application/pdf');
 
+      bankFormDirtyRef.current = true;
       setBankForm((current) => ({
         ...current,
         bankFile: {
@@ -962,6 +976,11 @@ export default function App() {
       if (isDocumentPickerCancel(error)) return;
       Alert.alert('Could not select file', ownerApiErrorMessage(error));
     }
+  };
+
+  const handleBankFormChange = (patch: Partial<typeof DEFAULT_BANK_FORM>) => {
+    bankFormDirtyRef.current = true;
+    setBankForm((current) => ({ ...current, ...patch }));
   };
 
   const refreshActiveScreen = async () => {
@@ -1132,6 +1151,7 @@ export default function App() {
     try {
       const result = await ownerApi.updateBank(token, bankForm);
       setBank(result.bank);
+      bankFormDirtyRef.current = false;
       if (step === 'bank-details-onboarding') {
         setStep('pending-approval');
       } else {
@@ -1182,13 +1202,13 @@ export default function App() {
         return (
           <RegisterScreen
             fullName={fullName}
-            address={address}
+            email={email}
             mobileNumber={mobileNumber}
             city={city}
             acceptedTerms={acceptedTerms}
             onToggleTerms={() => setAcceptedTerms((value) => !value)}
             onChangeFullName={setFullName}
-            onChangeAddress={setAddress}
+            onChangeEmail={setEmail}
             onChangeMobile={setMobileNumber}
             onChangeCity={setCity}
             onContinue={handleRegisterContinue}
@@ -1213,11 +1233,7 @@ export default function App() {
               setStep('register');
             }}
             onNext={() => {
-              if (kycRequestOrigin === 'documents') {
-                setStep('documents');
-                return;
-              }
-              setStep(resolveKycStep(owner?.kycStatus));
+              void handleKycSubmit();
             }}
             onSubmit={handleKycSubmit}
             onPickDocument={handlePickKycDocument}
@@ -1228,9 +1244,9 @@ export default function App() {
       case 'pending-approval':
         return (
           <PendingApprovalScreen
-            ownerName={owner?.name || fullName || 'Ravi'}
+            ownerName={owner?.name || fullName || 'Owner'}
             status={owner?.kycStatus || 'PENDING'}
-            rejectionReason={owner?.kycRejectionReason}
+            rejectionReason={owner?.kycRejectionReason || kyc?.rejectionReason}
             onRetryKyc={() => setStep('kyc')}
           />
         );
@@ -1618,38 +1634,41 @@ export default function App() {
         return (
           <BankDetailsScreen
             onBack={() => setStep('profile')}
-            onOpenEdit={() => setShowBankEditModal(true)}
-            bank={bank}
-            form={bankForm}
-            onChangeForm={(patch) => setBankForm((current) => ({ ...current, ...patch }))}
-            onSubmit={handleBankSubmit}
-            showEditModal={showBankEditModal}
-          />
+          onOpenEdit={() => setShowBankEditModal(true)}
+          bank={bank}
+          owner={owner}
+          form={bankForm}
+          onChangeForm={handleBankFormChange}
+          onSubmit={handleBankSubmit}
+          showEditModal={showBankEditModal}
+        />
         );
       case 'bank-details-onboarding':
         return (
           <BankDetailsScreen
             mode="onboarding"
             onBack={() => setStep('kyc')}
-            onOpenEdit={() => setShowBankEditModal(true)}
-            bank={bank}
-            form={bankForm}
-            onPickBankDocument={handlePickBankDocument}
-            onChangeForm={(patch) => setBankForm((current) => ({ ...current, ...patch }))}
-            onSubmit={handleBankSubmit}
-          />
+          onOpenEdit={() => setShowBankEditModal(true)}
+          bank={bank}
+          owner={owner}
+          form={bankForm}
+          onPickBankDocument={handlePickBankDocument}
+          onChangeForm={handleBankFormChange}
+          onSubmit={handleBankSubmit}
+        />
         );
       case 'bank-details-edit':
         return (
           <BankDetailsScreen
             onBack={() => setStep('profile')}
-            onOpenEdit={() => setShowBankEditModal(false)}
-            bank={bank}
-            form={bankForm}
-            onChangeForm={(patch) => setBankForm((current) => ({ ...current, ...patch }))}
-            onSubmit={handleBankSubmit}
-            showEditModal
-          />
+          onOpenEdit={() => setShowBankEditModal(false)}
+          bank={bank}
+          owner={owner}
+          form={bankForm}
+          onChangeForm={handleBankFormChange}
+          onSubmit={handleBankSubmit}
+          showEditModal
+        />
         );
       default:
         return null;
@@ -1666,39 +1685,66 @@ export default function App() {
   }, [step]);
 
   useEffect(() => {
-    if (!token || step !== 'pending-approval') return;
+    if (!token) return;
 
     let active = true;
+    let inFlight = false;
 
-    const checkKycStatus = async () => {
+    const syncKycStatus = async () => {
+      if (inFlight) return;
+      inFlight = true;
+
       try {
         const result = await refreshOwnerProfile(token);
         if (!active) return;
 
-        if (result.owner?.kycStatus === 'APPROVED') {
+        const kycStatus = result.owner?.kycStatus;
+        const shouldNavigate = step === 'pending-approval';
+
+        if (kycStatus === 'APPROVED' && shouldNavigate) {
           await loadDashboardData(token);
+          if (!active) return;
           setStep('dashboard');
+          return;
+        }
+
+        if (kycStatus === 'REJECTED' && shouldNavigate) {
+          setStep('pending-approval');
         }
       } catch {
-        // Keep the waiting screen visible even if a refresh fails.
+        // Ignore transient refresh errors and try again when the app becomes active again.
+      } finally {
+        inFlight = false;
       }
     };
 
-    void checkKycStatus();
-    const timer = setInterval(() => {
-      void checkKycStatus();
-    }, 15000);
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void syncKycStatus();
+      }
+    });
+
+    void syncKycStatus();
 
     return () => {
       active = false;
-      clearInterval(timer);
+      appStateSubscription.remove();
     };
   }, [step, token]);
 
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="dark-content" />
-      <View style={styles.container}>{isBootstrapping ? null : renderScreen()}</View>
+      <View style={styles.container}>
+        {isBootstrapping ? (
+          <View style={styles.bootScreen}>
+            <ActivityIndicator size="small" color="#fc4c02" />
+            <Text style={styles.bootText}>Loading owner dashboard...</Text>
+          </View>
+        ) : (
+          renderScreen()
+        )}
+      </View>
       <NoticeModal
         visible={Boolean(notice)}
         title={notice?.title || ''}
@@ -1728,5 +1774,17 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  bootScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    backgroundColor: '#efe8e4',
+  },
+  bootText: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

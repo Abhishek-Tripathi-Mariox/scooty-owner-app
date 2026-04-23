@@ -1,36 +1,54 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { GradientButton } from '../components/GradientButton';
 import { PageFrame } from '../components/PageFrame';
 import { ProgressBar } from '../components/ProgressBar';
-import { COLORS, SPACING } from '../constants/theme';
+import { COLORS } from '../constants/theme';
 import type { KycUploadFiles } from '../services/ownerApi';
 
 type KycField = keyof KycUploadFiles;
+
+function UploadIcon({ size = 32, color = '#6a7282' }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3v12m0-12-4 4m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 function UploadCard({
   label,
   hint,
   fileName,
   onPress,
-  actionLabel = 'Upload',
 }: {
   label: string;
   hint: string;
   fileName?: string;
   onPress: () => void;
-  actionLabel?: string;
 }) {
+  const isUploaded = Boolean(fileName);
   return (
     <View style={styles.uploadBlock}>
       <Text style={styles.uploadLabel}>{label}</Text>
-      <Pressable style={[styles.uploadCard, fileName ? styles.uploadCardSelected : null]} onPress={onPress}>
-        <View style={styles.uploadLeft}>
-          <Text style={styles.uploadIcon}>{fileName ? '✓' : '⇪'}</Text>
-          <View style={styles.uploadTextWrap}>
-            <Text style={styles.uploadHint}>{fileName || hint}</Text>
-          </View>
-        </View>
-        <Text style={styles.uploadAction}>{actionLabel}</Text>
+      <Pressable
+        style={[styles.uploadCard, isUploaded && styles.uploadCardSelected]}
+        onPress={onPress}
+      >
+        <UploadIcon size={32} color={isUploaded ? '#fc4c02' : '#6a7282'} />
+        <Text
+          style={[styles.uploadHint, isUploaded && styles.uploadHintSelected]}
+          numberOfLines={1}
+        >
+          {fileName || hint}
+        </Text>
       </Pressable>
     </View>
   );
@@ -70,172 +88,106 @@ export function KycScreen({
     return defaultHint;
   };
 
-  const getDocLabel = (field: KycField) => {
-    if (requestedDocument === field) return 'Upload replacement';
-    return 'Upload';
-  };
-
-  const changeRequestMessage = requestedDocument
-    ? 'Upload the requested document to replace the existing file. Other documents will remain unchanged unless you update them too.'
-    : 'Aadhaar, PAN, and profile photo are required before submission. Uploaded files will show with a check mark.';
-
   return (
-    <PageFrame title="Complete KYC" onBack={onBack} scroll>
-      <ProgressBar progress={58} />
+    <PageFrame title="Complete KYC" onBack={onBack} scroll titleStyle={styles.pageTitle}>
+      <ProgressBar progress={50} />
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Upload Documents</Text>
-        <Text style={styles.sectionNote}>{changeRequestMessage}</Text>
+
         <UploadCard
           label="Upload Aadhaar"
-          hint={getHint('adharFile', 'Tap to select Aadhaar image or PDF', existingDocuments?.adharFileUrl)}
-          fileName={documents.adharFile?.name || undefined}
+          hint="Click to upload Aadhaar"
+          fileName={
+            documents.adharFile?.name ||
+            (existingDocuments?.adharFileUrl ? 'Current document uploaded' : undefined)
+          }
           onPress={() => onPickDocument('adharFile')}
-          actionLabel={getDocLabel('adharFile')}
         />
         <UploadCard
           label="Upload PAN Card"
-          hint={getHint('panFile', 'Tap to select PAN image or PDF', existingDocuments?.panFileUrl)}
-          fileName={documents.panFile?.name || undefined}
+          hint="Click to upload PAN Card"
+          fileName={
+            documents.panFile?.name ||
+            (existingDocuments?.panFileUrl ? 'Current document uploaded' : undefined)
+          }
           onPress={() => onPickDocument('panFile')}
-          actionLabel={getDocLabel('panFile')}
         />
         <UploadCard
           label="Upload Profile Photo"
-          hint={getHint('profilePhoto', 'Tap to select a profile photo', existingDocuments?.profilePhotoUrl)}
-          fileName={documents.profilePhoto?.name || undefined}
+          hint="Click to upload photo"
+          fileName={
+            documents.profilePhoto?.name ||
+            (existingDocuments?.profilePhotoUrl ? 'Current document uploaded' : undefined)
+          }
           onPress={() => onPickDocument('profilePhoto')}
-          actionLabel={getDocLabel('profilePhoto')}
         />
       </View>
 
-      <Text style={styles.note}>
-        {isChangeRequest
-          ? 'Only the requested document is required for replacement. Leave other documents unchanged unless you want to update them too.'
-          : 'Aadhaar, PAN, and profile photo are required before submission.'}
-      </Text>
-
-      <Pressable style={[styles.button, (!isReady || loading) && styles.buttonDisabled]} onPress={onSubmit} disabled={loading || !isReady}>
-        <Text style={styles.buttonText}>{loading ? 'Submitting...' : 'Submit KYC'}</Text>
-      </Pressable>
-
-      <Pressable style={styles.secondaryButton} onPress={onNext}>
-        <Text style={styles.secondaryButtonText}>{isChangeRequest ? 'Back to documents' : 'Skip for now'}</Text>
-      </Pressable>
+      <GradientButton
+        label={loading ? 'Submitting...' : isChangeRequest ? 'Submit' : 'Next'}
+        onPress={isChangeRequest ? onSubmit : onNext}
+        style={styles.button}
+        disabled={loading || !isReady}
+        height={48}
+        radius={14}
+      />
     </PageFrame>
   );
 }
 
 const styles = StyleSheet.create({
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 28,
+  },
   section: {
-    marginTop: 18,
+    marginTop: 16,
   },
   sectionTitle: {
     color: COLORS.textPrimary,
-    fontSize: 18,
-    fontWeight: '900',
-    marginBottom: 6,
-  },
-  sectionNote: {
-    marginBottom: 14,
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 28,
+    marginBottom: 16,
   },
   uploadBlock: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   uploadLabel: {
-    marginBottom: 6,
-    fontSize: 12,
+    marginBottom: 8,
+    fontSize: 14,
     color: COLORS.textPrimary,
-    fontWeight: '700',
+    fontWeight: '500',
+    lineHeight: 14,
   },
   uploadCard: {
-    minHeight: 92,
-    borderRadius: SPACING.cardRadius,
-    backgroundColor: 'rgba(255,255,255,0.55)',
+    height: 126,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    flexDirection: 'row',
+    borderColor: 'rgba(255,255,255,0.62)',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  uploadAction: {
-    color: COLORS.button,
-    fontSize: 12,
-    fontWeight: '800',
+    justifyContent: 'center',
+    gap: 8,
   },
   uploadCardSelected: {
-    backgroundColor: 'rgba(255, 244, 239, 0.92)',
-    borderColor: COLORS.button,
-  },
-  uploadLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  uploadIcon: {
-    fontSize: 28,
-    color: '#95a1b8',
-    marginRight: 10,
-  },
-  uploadTextWrap: {
-    flex: 1,
+    borderColor: '#fc4c02',
+    backgroundColor: 'rgba(255, 244, 239, 0.5)',
   },
   uploadHint: {
-    color: '#6d7084',
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
+    color: '#6a7282',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
-  uploadBadge: {
-    marginLeft: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,244,239,0.95)',
-    color: COLORS.button,
-    fontSize: 10,
-    fontWeight: '900',
+  uploadHintSelected: {
+    color: '#fc4c02',
+    fontWeight: '500',
   },
   button: {
-    marginTop: 12,
-    height: 42,
-    borderRadius: 10,
-    backgroundColor: COLORS.button,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  note: {
-    marginTop: 12,
-    marginBottom: 4,
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  secondaryButton: {
-    marginTop: 10,
-    height: 42,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.button,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryButtonText: {
-    color: COLORS.button,
-    fontWeight: '800',
-    fontSize: 13,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 13,
+    marginTop: 8,
   },
 });

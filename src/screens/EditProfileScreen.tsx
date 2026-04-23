@@ -1,7 +1,24 @@
-import React from 'react';
-import { FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { PageFrame } from '../components/PageFrame';
-import { COLORS } from '../constants/theme';
+import React, { useState } from 'react';
+import {
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { AppBackground } from '../components/AppBackground';
+import { GradientButton } from '../components/GradientButton';
+import {
+  ArrowLeftIcon,
+  CameraIcon,
+  ChevronDownIcon,
+} from '../components/OwnerIcons';
 import { Owner, type KycUploadFile } from '../services/ownerApi';
 
 const INDIAN_STATES = [
@@ -43,7 +60,7 @@ const INDIAN_STATES = [
   'Puducherry',
 ];
 
-function Field({
+function FloatingField({
   label,
   value,
   onChangeText,
@@ -54,18 +71,20 @@ function Field({
   label: string;
   value: string;
   onChangeText: (value: string) => void;
-  placeholder: string;
-  keyboardType?: 'default' | 'email-address' | 'number-pad';
+  placeholder?: string;
+  keyboardType?: 'default' | 'email-address' | 'number-pad' | 'phone-pad';
   editable?: boolean;
 }) {
   return (
     <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.fieldLabelWrap}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+      </View>
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#a79ca3"
+        placeholderTextColor="#9ca3af"
         keyboardType={keyboardType}
         editable={editable}
         style={[styles.input, !editable && styles.inputDisabled]}
@@ -109,107 +128,150 @@ export function EditProfileScreen({
     .join('')
     .toUpperCase();
   const profilePhotoUrl = owner?.profilePhotoUrl || '';
-  const [statePickerOpen, setStatePickerOpen] = React.useState(false);
-  const [stateSearch, setStateSearch] = React.useState('');
+  const [statePickerOpen, setStatePickerOpen] = useState(false);
+  const [stateSearch, setStateSearch] = useState('');
 
   const filteredStates = INDIAN_STATES.filter((state) =>
     state.toLowerCase().includes(stateSearch.trim().toLowerCase()),
   );
 
   return (
-    <PageFrame title="Profile" onBack={onBack} scroll>
-      <View style={styles.hero}>
-        <Pressable style={styles.avatarWrap} onPress={onPickProfilePhoto}>
-          <View style={styles.avatar}>
-            {profilePhoto?.uri || profilePhotoUrl ? (
-              <Image
-                source={{ uri: profilePhoto?.uri || profilePhotoUrl }}
-                style={styles.avatarImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <Text style={styles.avatarText}>{initials}</Text>
-            )}
-          </View>
-          <View style={styles.cameraBadge}>
-            <Text style={styles.cameraIcon}>▣</Text>
-          </View>
+    <View style={styles.root}>
+      <AppBackground variant="auth" />
+
+      <View style={styles.topbar}>
+        <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
+          <ArrowLeftIcon size={24} color="#0f172a" />
         </Pressable>
-        <Text style={styles.heroTitle}>{owner?.name || form.fullName || 'Vehicle Owner'}</Text>
-        <Text style={styles.heroSubtitle}>{owner?.companyName || 'Verified Owner'}</Text>
+        <Text style={styles.heading}>Profile</Text>
       </View>
 
-      <View style={styles.formCard}>
-        <Field
-          label="Full Name"
-          value={form.fullName}
-          onChangeText={(value) => onChangeForm({ fullName: value })}
-          placeholder="Enter full name"
-        />
-        <Field
-          label="Email Address"
-          value={form.email}
-          onChangeText={(value) => onChangeForm({ email: value })}
-          placeholder="Enter email address"
-          keyboardType="email-address"
-        />
-        <Field
-          label="Phone Number"
-          value={form.mobile}
-          onChangeText={() => undefined}
-          placeholder="Phone number"
-          editable={false}
-        />
-        <Field
-          label="Current Address"
-          value={form.address}
-          onChangeText={(value) => onChangeForm({ address: value })}
-          placeholder="Enter current address"
-        />
-        <View style={styles.row}>
-          <View style={styles.rowHalf}>
-            <Field
-              label="Zip Code"
-              value={form.pincode}
-              onChangeText={(value) => onChangeForm({ pincode: value })}
-              placeholder="Pin code"
-              keyboardType="number-pad"
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Pressable style={styles.avatarWrap} onPress={onPickProfilePhoto}>
+            <View style={styles.avatar}>
+              {profilePhoto?.uri || profilePhotoUrl ? (
+                <Image
+                  source={{ uri: profilePhoto?.uri || profilePhotoUrl }}
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.avatarText}>{initials}</Text>
+              )}
+            </View>
+            <View style={styles.avatarOverlay} pointerEvents="none">
+              <CameraIcon size={32} color="#ffffff" />
+            </View>
+          </Pressable>
+
+          <View style={styles.formCard}>
+            <FloatingField
+              label="Full Name"
+              value={form.fullName}
+              onChangeText={(v) => onChangeForm({ fullName: v })}
+              placeholder="Enter full name"
             />
-          </View>
-          <View style={styles.rowHalf}>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>State</Text>
-              <Pressable
-                style={styles.selector}
-                onPress={() => {
-                  setStateSearch('');
-                  setStatePickerOpen(true);
-                }}
-              >
-                <Text style={[styles.selectorText, !form.state && styles.selectorPlaceholder]}>
-                  {form.state || 'Select state'}
-                </Text>
-                <Text style={styles.selectorArrow}>⌄</Text>
-              </Pressable>
+            <FloatingField
+              label="Email Address"
+              value={form.email}
+              onChangeText={(v) => onChangeForm({ email: v })}
+              placeholder="your@email.com"
+              keyboardType="email-address"
+            />
+            <FloatingField
+              label="Phone Number"
+              value={form.mobile ? `+91 ${form.mobile}` : ''}
+              onChangeText={() => undefined}
+              placeholder="+91 98765 43210"
+              editable={false}
+            />
+            <FloatingField
+              label="Current Address"
+              value={form.address}
+              onChangeText={(v) => onChangeForm({ address: v })}
+              placeholder="Enter current address"
+            />
+            <FloatingField
+              label="City"
+              value={form.city || ''}
+              onChangeText={(v) => onChangeForm({ city: v })}
+              placeholder="Enter city"
+            />
+            <View style={styles.row}>
+              <View style={styles.rowHalf}>
+                <FloatingField
+                  label="Zip Code"
+                  value={form.pincode}
+                  onChangeText={(v) => onChangeForm({ pincode: v })}
+                  placeholder="203207"
+                  keyboardType="number-pad"
+                />
+              </View>
+              <View style={styles.rowHalf}>
+                <View style={styles.field}>
+                  <View style={styles.fieldLabelWrap}>
+                    <Text style={styles.fieldLabel}>State</Text>
+                  </View>
+                  <Pressable
+                    style={styles.selector}
+                    onPress={() => {
+                      setStateSearch('');
+                      setStatePickerOpen(true);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.selectorText,
+                        !form.state && styles.selectorPlaceholder,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {form.state || 'Select state'}
+                    </Text>
+                    <ChevronDownIcon size={16} color="#64748b" />
+                  </Pressable>
+                </View>
+              </View>
             </View>
           </View>
-        </View>
 
-        <Pressable style={[styles.saveButton, loading && styles.saveButtonDisabled]} onPress={onSubmit} disabled={loading}>
-          <Text style={styles.saveText}>{loading ? 'Saving...' : 'Save Changes'}</Text>
-        </Pressable>
-      </View>
+          <GradientButton
+            label={loading ? 'Saving...' : 'Save Changes'}
+            onPress={onSubmit}
+            disabled={loading}
+            height={56}
+            radius={12}
+            style={styles.saveButton}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-      <Modal visible={statePickerOpen} transparent animationType="fade" onRequestClose={() => setStatePickerOpen(false)}>
+      <Modal
+        visible={statePickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setStatePickerOpen(false)}
+      >
         <View style={styles.modalBackdrop}>
-          <Pressable style={styles.modalBackdropTouchable} onPress={() => setStatePickerOpen(false)} />
+          <Pressable
+            style={styles.modalBackdropTouchable}
+            onPress={() => setStatePickerOpen(false)}
+          />
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Select State</Text>
             <TextInput
               value={stateSearch}
               onChangeText={setStateSearch}
               placeholder="Search state"
-              placeholderTextColor="#a79ca3"
+              placeholderTextColor="#9ca3af"
               style={styles.searchInput}
             />
             <FlatList
@@ -219,7 +281,10 @@ export function EditProfileScreen({
               style={styles.stateList}
               renderItem={({ item }) => (
                 <Pressable
-                  style={[styles.stateRow, item === form.state && styles.stateRowSelected]}
+                  style={[
+                    styles.stateRow,
+                    item === form.state && styles.stateRowSelected,
+                  ]}
                   onPress={() => {
                     onChangeForm({ state: item });
                     setStatePickerOpen(false);
@@ -235,32 +300,57 @@ export function EditProfileScreen({
           </View>
         </View>
       </Modal>
-    </PageFrame>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: {
-    borderRadius: 22,
-    backgroundColor: COLORS.button,
-    paddingHorizontal: 18,
-    paddingTop: 22,
-    paddingBottom: 18,
+  root: { flex: 1, backgroundColor: 'transparent' },
+  flex: { flex: 1 },
+  topbar: {
+    height: 82,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.62)',
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    gap: 16,
   },
-  avatarWrap: {
-    width: 112,
-    height: 112,
+  back: {
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+  },
+  heading: {
+    color: '#000000',
+    fontSize: 24,
+    fontWeight: '500',
+    lineHeight: 32,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 24,
+    alignItems: 'stretch',
+  },
+  avatarWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignSelf: 'center',
+    marginBottom: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   avatar: {
-    width: 102,
-    height: 102,
-    borderRadius: 26,
-    backgroundColor: '#6b3a31',
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#fc4c02',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -270,155 +360,141 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   avatarText: {
-    color: '#fff',
-    fontSize: 26,
-    fontWeight: '900',
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '700',
   },
-  cameraBadge: {
-    position: 'absolute',
-    bottom: 2,
-    right: 6,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+  avatarOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(22,22,22,0.55)',
   },
-  cameraIcon: { color: COLORS.button, fontSize: 15, fontWeight: '900' },
-  heroTitle: { color: '#fff', fontSize: 18, fontWeight: '900' },
-  heroSubtitle: { color: 'rgba(255,255,255,0.92)', marginTop: 4, fontSize: 12 },
   formCard: {
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.76)',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    padding: 14,
+    gap: 24,
+    marginBottom: 24,
   },
-  field: { marginBottom: 12 },
-  fieldLabel: { color: '#b29aa2', fontSize: 11, marginBottom: 5 },
-  selector: {
-    minHeight: 44,
-    borderRadius: 14,
+  field: {
+    position: 'relative',
+  },
+  fieldLabelWrap: {
+    position: 'absolute',
+    top: -8,
+    left: 16,
+    backgroundColor: '#fbe9e6',
+    paddingHorizontal: 8,
+    zIndex: 2,
+  },
+  fieldLabel: {
+    color: 'rgba(27,29,33,0.5)',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  input: {
+    height: 56,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.line,
-    backgroundColor: COLORS.inputBg,
-    paddingHorizontal: 12,
+    borderColor: 'rgba(27,29,33,0.1)',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 24,
+    color: '#1b1d21',
+    fontSize: 14,
+  },
+  inputDisabled: {
+    opacity: 0.6,
+  },
+  selector: {
+    height: 56,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(27,29,33,0.1)',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   selectorText: {
-    color: COLORS.textPrimary,
-    fontSize: 13,
     flex: 1,
-    paddingRight: 8,
+    color: '#1b1d21',
+    fontSize: 14,
+    marginRight: 8,
   },
   selectorPlaceholder: {
-    color: '#a79ca3',
-  },
-  selectorArrow: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  input: {
-    minHeight: 44,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    backgroundColor: COLORS.inputBg,
-    paddingHorizontal: 12,
-    color: COLORS.textPrimary,
-    fontSize: 13,
-  },
-  inputDisabled: {
-    opacity: 0.76,
+    color: '#9ca3af',
   },
   row: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
-  rowHalf: { flex: 1 },
+  rowHalf: {
+    flex: 1,
+  },
   saveButton: {
-    marginTop: 4,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: COLORS.button,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: 'stretch',
   },
-  saveButtonDisabled: {
-    opacity: 0.65,
-  },
-  saveText: { color: '#fff', fontSize: 13, fontWeight: '900' },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(17,24,39,0.38)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 20,
   },
   modalBackdropTouchable: {
     ...StyleSheet.absoluteFillObject,
   },
   modalCard: {
+    width: '100%',
+    maxWidth: 400,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 16,
-    maxHeight: '78%',
   },
   modalTitle: {
-    color: COLORS.textPrimary,
+    color: '#0f172a',
     fontSize: 16,
-    fontWeight: '900',
-    marginBottom: 10,
+    fontWeight: '700',
+    marginBottom: 12,
   },
   searchInput: {
     height: 44,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.line,
-    backgroundColor: COLORS.inputBg,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f8fafc',
     paddingHorizontal: 12,
-    color: COLORS.textPrimary,
-    fontSize: 13,
-    marginBottom: 10,
+    color: '#0f172a',
+    fontSize: 14,
+    marginBottom: 8,
   },
   stateList: {
-    maxHeight: 420,
+    maxHeight: 320,
   },
   stateRow: {
-    minHeight: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    paddingVertical: 12,
     paddingHorizontal: 12,
-    marginBottom: 8,
-    backgroundColor: '#faf7f5',
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   stateRowSelected: {
-    borderColor: COLORS.button,
-    backgroundColor: 'rgba(255,100,28,0.08)',
+    backgroundColor: 'rgba(252,76,2,0.1)',
   },
   stateName: {
-    color: COLORS.textPrimary,
-    fontSize: 13,
-    fontWeight: '700',
-    flex: 1,
-    paddingRight: 10,
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '500',
   },
   stateCheck: {
-    color: COLORS.button,
-    fontSize: 14,
-    fontWeight: '900',
+    color: '#fc4c02',
+    fontSize: 16,
+    fontWeight: '700',
   },
   emptyText: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    paddingVertical: 12,
+    paddingVertical: 16,
     textAlign: 'center',
+    color: '#64748b',
+    fontSize: 13,
   },
 });

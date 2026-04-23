@@ -5,16 +5,19 @@ import { COLORS } from '../constants/theme';
 export function OtpBoxes({
   otp,
   length,
+  activeIndex,
 }: {
   otp: string;
   length: number;
+  activeIndex?: number;
 }) {
   return (
     <View style={styles.row}>
       {Array.from({ length }).map((_, index) => {
-        const digit = otp[index] ?? 'X';
+        const digit = otp[index] ?? '';
+        const isActive = activeIndex === index;
         return (
-          <View key={`otp-${index}`} style={styles.box}>
+          <View key={`otp-${index}`} style={[styles.box, isActive && styles.boxActive]}>
             <Text style={styles.boxText}>{digit}</Text>
           </View>
         );
@@ -25,23 +28,27 @@ export function OtpBoxes({
 
 const styles = StyleSheet.create({
   row: {
-    marginTop: 12,
+    marginTop: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   box: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    borderWidth: 1,
-    borderColor: '#ece4e2',
+    width: 55,
+    height: 55,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: 1.162,
+    borderColor: '#e5e7eb',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  boxActive: {
+    borderColor: '#fc4c02',
+  },
   boxText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '500',
+    lineHeight: 20,
     color: COLORS.textPrimary,
   },
 });

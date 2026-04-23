@@ -1,11 +1,10 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { BrandMark } from '../components/BrandMark';
-import { OtpKeypad } from '../components/OtpKeypad';
+import { GradientButton } from '../components/GradientButton';
 import { PhoneIcon } from '../components/PhoneIcon';
-import { PrimaryButton } from '../components/PrimaryButton';
-import { COLORS, SPACING } from '../constants/theme';
+import { COLORS } from '../constants/theme';
 
 const MOBILE_LENGTH = 10;
 
@@ -26,49 +25,35 @@ export function LoginScreen({
   onRegisterPress?: () => void;
   loading?: boolean;
 }) {
-  const handleKeyPress = (value: string) => {
-    if (mobileNumber.length >= MOBILE_LENGTH) {
-      return;
-    }
-
-    onChangeMobile(`${mobileNumber}${value}`.replace(/\D/g, '').slice(0, MOBILE_LENGTH));
-  };
-
-  const handleBackspace = () => {
-    onChangeMobile(mobileNumber.slice(0, -1));
-  };
+  const canSubmit = acceptedTerms && mobileNumber.length === MOBILE_LENGTH && !loading;
 
   return (
-    <ScrollView contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.screen}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
       <AppBackground variant="auth" />
 
-      <View style={styles.header}>
+      <View style={styles.brandBlock}>
         <BrandMark />
-        <Text style={styles.headerCopy}>Secure access for fleet owners</Text>
       </View>
 
       <View style={styles.card}>
-        <View style={styles.cardTopRow}>
-          <Text style={styles.cardLabel}>Mobile Number</Text>
-          <View style={styles.secureChip}>
-            <Text style={styles.secureChipText}>OTP login</Text>
-          </View>
-        </View>
+        <Text style={styles.fieldLabel}>Mobile Number</Text>
         <View style={styles.inputRow}>
           <View style={styles.inputIconWrap}>
-            <PhoneIcon width={18} height={18} />
+            <PhoneIcon width={20} height={20} />
           </View>
-          <View style={styles.countryCode}>
-            <Text style={styles.countryCodeText}>+91</Text>
-          </View>
-          <View style={styles.inputValueWrap}>
-            <Text
-              style={[styles.inputValue, mobileNumber.length === 0 && styles.inputPlaceholder]}
-              numberOfLines={1}
-            >
-              {mobileNumber.length > 0 ? mobileNumber : 'Enter your mobile number'}
-            </Text>
-          </View>
+          <TextInput
+            value={mobileNumber}
+            onChangeText={(value) => onChangeMobile(value.replace(/\D/g, '').slice(0, MOBILE_LENGTH))}
+            placeholder="Enter your mobile number"
+            placeholderTextColor="#717182"
+            keyboardType="phone-pad"
+            maxLength={MOBILE_LENGTH}
+            style={styles.input}
+          />
         </View>
 
         <Pressable style={styles.termsRow} onPress={onToggleTerms}>
@@ -81,17 +66,14 @@ export function LoginScreen({
           </Text>
         </Pressable>
 
-        <PrimaryButton
+        <GradientButton
           label={loading ? 'Sending OTP...' : 'Send OTP  →'}
           onPress={onContinue}
-          style={styles.button}
-          disabled={loading || !acceptedTerms || mobileNumber.length !== MOBILE_LENGTH}
+          disabled={!canSubmit}
+          height={56}
+          radius={12}
+          style={styles.sendButton}
         />
-      </View>
-
-      <View style={styles.keypadShell}>
-        <Text style={styles.keypadTitle}>Quick number pad</Text>
-        <OtpKeypad onKeyPress={handleKeyPress} onBackspace={handleBackspace} />
       </View>
 
       <View style={styles.footerBlock}>
@@ -110,184 +92,122 @@ const styles = StyleSheet.create({
   screen: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.screenX,
-    paddingTop: 18,
-    paddingBottom: 18,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 24,
+    paddingTop: 64,
+    paddingBottom: 32,
     backgroundColor: 'transparent',
   },
-  header: {
-    marginTop: 24,
-    marginBottom: 14,
-  },
-  headerCopy: {
-    marginTop: 10,
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    fontWeight: '500',
-    letterSpacing: 0.2,
-    textAlign: 'center',
+  brandBlock: {
+    marginBottom: 48,
   },
   card: {
     width: '100%',
-    borderRadius: 26,
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 18,
-    backgroundColor: 'rgba(255, 247, 241, 0.66)',
+    borderRadius: 24,
+    paddingHorizontal: 25,
+    paddingTop: 25,
+    paddingBottom: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.72)',
-    shadowColor: '#c79e92',
-    shadowOpacity: 0.2,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
+    borderColor: 'rgba(255, 255, 255, 0.62)',
   },
-  cardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  cardLabel: {
-    color: '#2e3444',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  secureChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.66)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.75)',
-  },
-  secureChipText: {
-    color: COLORS.textSecondary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
+  fieldLabel: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    marginBottom: 8,
   },
   inputRow: {
-    minHeight: 54,
-    borderRadius: 16,
+    height: 56,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(223, 216, 213, 0.95)',
-    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderColor: '#e5e7eb',
+    backgroundColor: 'rgba(255,255,255,0.5)',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   },
   inputIconWrap: {
-    width: 18,
-    height: 18,
-    marginRight: 10,
+    width: 20,
+    height: 20,
+    marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  countryCode: {
-    paddingRight: 10,
-    marginRight: 10,
-    borderRightWidth: 1,
-    borderRightColor: '#e5ddd9',
-  },
-  countryCodeText: {
-    color: COLORS.textPrimary,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  inputValueWrap: {
+  input: {
     flex: 1,
-    minWidth: 0,
-  },
-  inputValue: {
     color: COLORS.textPrimary,
     fontSize: 14,
-    fontWeight: '700',
-  },
-  inputPlaceholder: {
-    color: '#8d8990',
-    fontWeight: '500',
+    paddingVertical: 0,
   },
   termsRow: {
-    marginTop: 14,
+    marginTop: 24,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
   },
   checkbox: {
-    width: 15,
-    height: 15,
-    borderRadius: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 3,
     borderWidth: 1,
-    borderColor: '#9b8a90',
-    marginTop: 1,
+    borderColor: '#717182',
+    marginTop: 4,
     marginRight: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: 'transparent',
   },
   checkboxChecked: {
-    backgroundColor: COLORS.button,
-    borderColor: COLORS.button,
+    backgroundColor: '#fc4c02',
+    borderColor: '#fc4c02',
   },
   checkboxMark: {
     color: '#fff',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '900',
-    lineHeight: 10,
+    lineHeight: 11,
   },
   termsText: {
     flex: 1,
-    color: COLORS.textSecondary,
-    fontSize: 11.5,
-    lineHeight: 17,
+    color: '#717182',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 20,
   },
   termsLink: {
-    color: COLORS.button,
+    color: COLORS.textPrimary,
     textDecorationLine: 'underline',
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 24,
   },
-  button: {
-    marginTop: 18,
-    height: 48,
-    borderRadius: 14,
-  },
-  keypadShell: {
-    width: '100%',
-    marginTop: 16,
-    paddingTop: 14,
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  keypadTitle: {
-    marginBottom: 12,
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+  sendButton: {
+    marginTop: 24,
   },
   footerBlock: {
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 32,
   },
   footerHint: {
-    fontSize: 11.5,
-    color: '#504d55',
-    marginBottom: 6,
+    fontSize: 12,
+    lineHeight: 16,
+    color: COLORS.textPrimary,
+    marginBottom: 12,
   },
   footerLink: {
-    color: COLORS.button,
-    fontSize: 12.5,
-    fontWeight: '800',
+    color: '#fc4f07',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 21,
   },
   copyright: {
-    fontSize: 11,
-    color: COLORS.textMuted,
+    marginTop: 'auto',
+    paddingTop: 48,
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#717182',
   },
 });

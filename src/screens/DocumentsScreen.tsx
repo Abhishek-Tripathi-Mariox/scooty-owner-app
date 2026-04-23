@@ -1,23 +1,55 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { PageFrame } from '../components/PageFrame';
-import { COLORS } from '../constants/theme';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppBackground } from '../components/AppBackground';
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  ClockIcon,
+  EyeIcon,
+  InfoIcon,
+  PencilIcon,
+} from '../components/OwnerIcons';
 import { Owner, OwnerKyc, VehicleItem } from '../services/ownerApi';
 import { formatShortDate } from '../utils/format';
 
+type DocStatus = 'VERIFIED' | 'UNDER_REVIEW' | 'NOT_SUBMITTED';
+
+function statusBadge(status: DocStatus) {
+  if (status === 'VERIFIED') {
+    return (
+      <View style={styles.verifiedPill}>
+        <Text style={styles.verifiedPillText}>✓ Verified</Text>
+      </View>
+    );
+  }
+  if (status === 'UNDER_REVIEW') {
+    return (
+      <View style={styles.reviewPill}>
+        <ClockIcon size={12} color="#ffa726" />
+        <Text style={styles.reviewPillText}>Under Review</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.notSubmittedPill}>
+      <Text style={styles.notSubmittedPillText}>Not submitted</Text>
+    </View>
+  );
+}
+
 function DocCard({
-  icon,
+  emoji,
   title,
   status,
-  detail,
+  expiryDate,
   uploadedAt,
   onView,
   onRequestChange,
 }: {
-  icon: string;
+  emoji: string;
   title: string;
-  status: string;
-  detail?: string;
+  status: DocStatus;
+  expiryDate?: string;
   uploadedAt?: string;
   onView?: () => void;
   onRequestChange?: () => void;
@@ -26,23 +58,37 @@ function DocCard({
     <View style={styles.docCard}>
       <View style={styles.docHeader}>
         <View style={styles.docIconWrap}>
-          <Text style={styles.docIcon}>{icon}</Text>
+          <Text style={styles.docEmoji}>{emoji}</Text>
         </View>
         <View style={styles.docTitleWrap}>
           <Text style={styles.docTitle}>{title}</Text>
-          <Text style={styles.docStatus}>{status}</Text>
+          <View style={styles.docStatusRow}>{statusBadge(status)}</View>
         </View>
       </View>
 
-      {detail ? <Text style={styles.docDetail}>{detail}</Text> : null}
-      {uploadedAt ? <Text style={styles.docMeta}>{uploadedAt}</Text> : null}
+      <View style={styles.docMetaList}>
+        {expiryDate ? (
+          <View style={styles.docMetaRow}>
+            <Text style={styles.docMetaLabel}>Expiry Date:</Text>
+            <Text style={styles.docMetaValue}>{expiryDate}</Text>
+          </View>
+        ) : null}
+        {uploadedAt ? (
+          <View style={styles.docMetaRow}>
+            <Text style={styles.docMetaLabel}>Uploaded:</Text>
+            <Text style={styles.docMetaValue}>{uploadedAt}</Text>
+          </View>
+        ) : null}
+      </View>
 
       <View style={styles.actionRow}>
-        <Pressable style={styles.actionButton} onPress={onView}>
-          <Text style={styles.actionButtonText}>View Document</Text>
+        <Pressable style={styles.viewButton} onPress={onView}>
+          <EyeIcon size={14} color="#fc4c02" />
+          <Text style={styles.viewButtonText}>View Document</Text>
         </Pressable>
-        <Pressable style={styles.actionButtonOutline} onPress={onRequestChange}>
-          <Text style={styles.actionButtonOutlineText}>Request Change</Text>
+        <Pressable style={styles.requestButton} onPress={onRequestChange}>
+          <PencilIcon size={14} color="#fc4c02" />
+          <Text style={styles.requestButtonText}>Request Change</Text>
         </Pressable>
       </View>
     </View>
@@ -70,125 +116,249 @@ export function DocumentsScreen({
 }) {
   const firstVehicle = vehicles[0] || null;
   const kycStatus = kyc?.status || owner?.kycStatus;
-  const statusLabel = kycStatus === 'APPROVED' ? 'Verified' : kycStatus === 'PENDING' ? 'Under Review' : 'Not submitted';
-  const aadhaarUrl = kyc?.documents?.adharFile || owner?.adharFile || '';
-  const panUrl = kyc?.documents?.panFile || owner?.panFile || '';
+  const aadhaarStatus: DocStatus =
+    kycStatus === 'APPROVED' ? 'VERIFIED' : kycStatus === 'PENDING' ? 'UNDER_REVIEW' : 'NOT_SUBMITTED';
+  const panStatus = aadhaarStatus;
+  const insuranceStatus: DocStatus = firstVehicle?.documents?.insuranceUrl
+    ? 'UNDER_REVIEW'
+    : 'NOT_SUBMITTED';
   const submittedAt = kyc?.submittedAt || owner?.kycSubmittedAt;
+  const uploadedLabel = submittedAt ? formatShortDate(submittedAt) : undefined;
 
   return (
-    <PageFrame title="Documents" onBack={onBack} scroll>
-      <View style={styles.notice}>
-        <Text style={styles.noticeText}>
-          Your documents are verified by the Movyra admin team. You can request a change if any document is outdated or incorrect.
-        </Text>
+    <View style={styles.root}>
+      <AppBackground variant="auth" />
+
+      <View style={styles.topbar}>
+        <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
+          <ArrowLeftIcon size={24} color="#0f172a" />
+        </Pressable>
+        <Text style={styles.heading}>Documents</Text>
       </View>
 
-      <DocCard
-        icon="🪪"
-        title="Aadhaar"
-        status={statusLabel}
-        detail={aadhaarUrl ? 'Owner KYC document linked' : 'Upload pending'}
-        uploadedAt={submittedAt ? `Uploaded: ${formatShortDate(submittedAt)}` : undefined}
-        onView={onViewAadhaar}
-        onRequestChange={() => onRequestChange?.('adharFile')}
-      />
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.noticeCard}>
+          <InfoIcon size={20} color="#fc4c02" />
+          <Text style={styles.noticeText}>
+            Your documents are verified by the Movyra admin team. You can request a change if any document is outdated or incorrect.
+          </Text>
+        </View>
 
-      <DocCard
-        icon="🧾"
-        title="PAN"
-        status={statusLabel}
-        detail={panUrl ? 'Owner KYC document linked' : 'Upload pending'}
-        uploadedAt={submittedAt ? `Uploaded: ${formatShortDate(submittedAt)}` : undefined}
-        onView={onViewPan}
-        onRequestChange={() => onRequestChange?.('panFile')}
-      />
+        <DocCard
+          emoji="📋"
+          title="Insurance"
+          status={insuranceStatus}
+          onView={onViewInsurance}
+          onRequestChange={() => onRequestChange?.('insurance')}
+        />
 
-      <DocCard
-        icon="⛽"
-        title="Insurance"
-        status={firstVehicle?.documents?.insuranceUrl ? 'Active' : 'Not linked'}
-        detail={
-          firstVehicle
-            ? `${firstVehicle.modelName || 'Vehicle'} insurance document`
-            : 'Vehicle insurance will show here once a vehicle is added'
-        }
-        uploadedAt={firstVehicle?.createdAt ? `Vehicle added: ${formatShortDate(firstVehicle.createdAt)}` : undefined}
-        onView={onViewInsurance}
-        onRequestChange={() => onRequestChange?.('insurance')}
-      />
+        <DocCard
+          emoji="🆔"
+          title="Aadhaar"
+          status={aadhaarStatus}
+          uploadedAt={uploadedLabel}
+          onView={onViewAadhaar}
+          onRequestChange={() => onRequestChange?.('adharFile')}
+        />
 
-      <View style={styles.footerCard}>
-        <Text style={styles.footerTitle}>Owner Details</Text>
-        <Text style={styles.footerText}>{owner?.name || 'Not set'}</Text>
-        <Text style={styles.footerText}>{owner?.email || 'No email set'}</Text>
-        <Text style={styles.footerText}>{owner?.mobile ? `+91 ${owner.mobile}` : 'No mobile set'}</Text>
-      </View>
-    </PageFrame>
+        <DocCard
+          emoji="💳"
+          title="PAN"
+          status={panStatus}
+          uploadedAt={uploadedLabel}
+          onView={onViewPan}
+          onRequestChange={() => onRequestChange?.('panFile')}
+        />
+      </ScrollView>
+    </View>
   );
 }
 
+// suppress unused warning for CheckIcon (kept available if design shifts)
+void CheckIcon;
+
 const styles = StyleSheet.create({
-  notice: {
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.74)',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    padding: 14,
-    marginBottom: 12,
+  root: { flex: 1, backgroundColor: 'transparent' },
+  topbar: {
+    height: 82,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.62)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  noticeText: { color: COLORS.textSecondary, fontSize: 12, lineHeight: 17 },
+  back: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heading: {
+    color: '#000000',
+    fontSize: 24,
+    fontWeight: '500',
+    lineHeight: 32,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 24,
+    gap: 12,
+  },
+  noticeCard: {
+    flexDirection: 'row',
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: 1.162,
+    borderColor: 'rgba(252,76,2,0.2)',
+    backgroundColor: 'rgba(227,242,253,0.25)',
+    paddingHorizontal: 17,
+    paddingVertical: 17,
+  },
+  noticeText: {
+    flex: 1,
+    color: '#364153',
+    fontSize: 12,
+    lineHeight: 19.5,
+  },
   docCard: {
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    padding: 14,
-    marginBottom: 12,
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    gap: 12,
   },
-  docHeader: { flexDirection: 'row', alignItems: 'center' },
+  docHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
   docIconWrap: {
-    width: 38,
-    height: 38,
+    width: 48,
+    height: 48,
     borderRadius: 12,
-    backgroundColor: '#fff4ef',
+    backgroundColor: 'rgba(252,76,2,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
   },
-  docIcon: { fontSize: 18 },
-  docTitleWrap: { flex: 1 },
-  docTitle: { color: COLORS.textPrimary, fontSize: 14, fontWeight: '900' },
-  docStatus: { color: COLORS.button, fontSize: 11, fontWeight: '800', marginTop: 4 },
-  docDetail: { marginTop: 10, color: COLORS.textSecondary, fontSize: 11, lineHeight: 16 },
-  docMeta: { marginTop: 4, color: COLORS.textMuted, fontSize: 10 },
-  actionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  actionButton: {
+  docEmoji: {
+    fontSize: 24,
+  },
+  docTitleWrap: {
     flex: 1,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: COLORS.button,
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
   },
-  actionButtonText: { color: '#fff', fontSize: 12, fontWeight: '900' },
-  actionButtonOutline: {
+  docTitle: {
+    color: '#101828',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  docStatusRow: {
+    flexDirection: 'row',
+  },
+  verifiedPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(252,76,2,0.1)',
+  },
+  verifiedPillText: {
+    color: '#fc4c02',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  reviewPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#fff3e0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  reviewPillText: {
+    color: '#ffa726',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  notSubmittedPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(100,116,139,0.15)',
+  },
+  notSubmittedPillText: {
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  docMetaList: {
+    gap: 8,
+  },
+  docMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  docMetaLabel: {
+    color: '#4a5565',
+    fontSize: 13,
+    lineHeight: 19.5,
+  },
+  docMetaValue: {
+    color: '#101828',
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 19.5,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  viewButton: {
     flex: 1,
-    height: 40,
+    height: 48,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.button,
+    backgroundColor: 'rgba(252,76,2,0.1)',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   },
-  actionButtonOutlineText: { color: COLORS.button, fontSize: 12, fontWeight: '900' },
-  footerCard: {
-    marginTop: 2,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.68)',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    padding: 14,
+  viewButtonText: {
+    color: '#fc4c02',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 21,
   },
-  footerTitle: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '900', marginBottom: 8 },
-  footerText: { color: COLORS.textSecondary, fontSize: 11, lineHeight: 16 },
+  requestButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1.162,
+    borderColor: '#fc4c02',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  requestButtonText: {
+    color: '#fc4c02',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 21,
+  },
 });

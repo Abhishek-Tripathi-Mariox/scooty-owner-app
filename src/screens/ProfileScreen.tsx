@@ -1,62 +1,57 @@
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
-import { PageFrame } from '../components/PageFrame';
-import { COLORS } from '../constants/theme';
+import {
+  BankIcon,
+  ChevronRightIcon,
+  DocumentFileIcon,
+  HelpIcon,
+  LocationPinIcon,
+  LogoutIcon,
+  MailIcon,
+  PencilIcon,
+  PhoneCallIcon,
+  SettingsIcon,
+  ShieldCheckIcon,
+} from '../components/OwnerIcons';
 import { Bank, Dashboard, Owner, OwnerKyc } from '../services/ownerApi';
 import { formatCurrency } from '../utils/format';
 
-// Import profile icon images
-const EditIcon = require('../assets/images/profile/edit.png');
-const SettingIcon = require('../assets/images/profile/setting.png');
-const BankIcon = require('../assets/images/profile/bank.png');
-const CallIcon = require('../assets/images/profile/call.png');
-const EmailIcon = require('../assets/images/profile/email.png');
-const LocationIcon = require('../assets/images/profile/location1.png');
-const VerifiedIcon = require('../assets/images/profile/verified.png');
-const DocumentIcon = require('../assets/images/profile/document.png');
-const SupportIcon = require('../assets/images/profile/support1.png');
-const LogoutIcon = require('../assets/images/profile/logout1.png');  
-function MenuItem({
-  iconSource,
-  label,
-  onPress,
-}: {
-  iconSource: any;
-  label: string;
-  onPress: () => void;
-}) {
+function GradientHeaderBg() {
   return (
-    <Pressable style={styles.menuItem} onPress={onPress}>
-      <View style={styles.menuIcon}>
-        <Image source={iconSource} style={styles.menuIconImage} resizeMode="contain" />
-      </View>
-      <Text style={styles.menuLabel}>{label}</Text>
-      <Text style={styles.menuArrow}>›</Text>
-    </Pressable>
+    <Svg width="100%" height="100%">
+      <Defs>
+        <LinearGradient id="profileHeaderGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <Stop offset="0%" stopColor="#fc4c02" stopOpacity={1} />
+          <Stop offset="100%" stopColor="#ff7a45" stopOpacity={1} />
+        </LinearGradient>
+      </Defs>
+      <Rect width="100%" height="100%" fill="url(#profileHeaderGrad)" rx={32} ry={32} />
+    </Svg>
   );
 }
 
-function SupportMenuItem({
+function MenuItem({
+  icon,
   label,
   onPress,
 }: {
+  icon: React.ReactNode;
   label: string;
   onPress: () => void;
 }) {
   return (
     <Pressable style={styles.menuItem} onPress={onPress}>
-      <View style={styles.menuIcon}>
-        <Image source={SupportIcon} style={styles.menuIconImage} resizeMode="contain" />
-      </View>
+      <View style={styles.menuIconWrap}>{icon}</View>
       <Text style={styles.menuLabel}>{label}</Text>
-      <Text style={styles.menuArrow}>›</Text>
+      <ChevronRightIcon size={20} color="#64748b" />
     </Pressable>
   );
 }
 
 export function ProfileScreen({
-  onBack,
   onOpenEditProfile,
   onOpenSettings,
   onOpenSupport,
@@ -65,7 +60,7 @@ export function ProfileScreen({
   onLogout,
   onTabPress,
   owner,
-  bank,
+  bank: _bank,
   dashboard,
   kyc,
 }: {
@@ -82,7 +77,8 @@ export function ProfileScreen({
   dashboard?: Dashboard | null;
   kyc?: OwnerKyc | null;
 }) {
-  const initials = (owner?.name || owner?.companyName || 'Owner')
+  const name = owner?.name || owner?.companyName || 'Vehicle Owner';
+  const initials = name
     .trim()
     .split(/\s+/)
     .slice(0, 2)
@@ -90,203 +86,302 @@ export function ProfileScreen({
     .join('')
     .toUpperCase();
   const profilePhotoUrl = owner?.profilePhotoUrl || '';
+  const isVerified = kyc?.status === 'APPROVED' || owner?.kycStatus === 'APPROVED';
+  const averageRating = dashboard?.averageRating;
 
   return (
     <View style={styles.root}>
-      <PageFrame title="Profile" onBack={onBack} scroll={false}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.hero}>
-            <View style={styles.heroCard}>
-              <View style={styles.identityRow}>
-                <View style={styles.avatar}>
-                  {profilePhotoUrl ? (
-                    <Image source={{ uri: profilePhotoUrl }} style={styles.avatarImage} resizeMode="cover" />
-                  ) : (
-                    <Text style={styles.avatarText}>{initials}</Text>
-                  )}
-                </View>
-                <View style={styles.identityCopy}>
-                  <Text style={styles.name}>{owner?.name || 'Vehicle Owner'}</Text>
-                  {kyc?.status === 'APPROVED' ? (
-                    <View style={styles.badgeContainer}>
-                      <Image source={VerifiedIcon} style={styles.badgeIcon} resizeMode="contain" />
-                      <Text style={styles.badge}>Verified Owner</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.badge}>Owner Profile</Text>
-                  )}
+      <AppBackground variant="auth" />
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View style={StyleSheet.absoluteFill}>
+            <GradientHeaderBg />
+          </View>
+          <Text style={styles.headerTitle}>Profile</Text>
+
+          <View style={styles.identityCard}>
+            <View style={styles.identityRow}>
+              <View style={styles.avatar}>
+                {profilePhotoUrl ? (
+                  <Image source={{ uri: profilePhotoUrl }} style={styles.avatarImage} resizeMode="cover" />
+                ) : (
+                  <Text style={styles.avatarText}>{initials}</Text>
+                )}
+              </View>
+              <View style={styles.identityTextWrap}>
+                <Text style={styles.name}>{name}</Text>
+                <View style={styles.verifiedRow}>
+                  <ShieldCheckIcon size={16} color="#0f172a" />
+                  <Text style={styles.verifiedText}>
+                    {isVerified ? 'Verified Owner' : 'Owner Profile'}
+                  </Text>
                 </View>
               </View>
+            </View>
 
-              <View style={styles.contactList}>
-                <InfoRow iconSource={EmailIcon} value={owner?.email || 'No email set'} />
-                <InfoRow iconSource={CallIcon} value={owner?.mobile ? `+91 ${owner.mobile}` : 'No mobile set'} />
-                <InfoRow iconSource={LocationIcon} value={owner?.city || owner?.state || 'City not set'} />
+            <View style={styles.contactList}>
+              <View style={styles.contactRow}>
+                <MailIcon size={16} color="#0f172a" />
+                <Text style={styles.contactText}>{owner?.email || 'No email set'}</Text>
+              </View>
+              <View style={styles.contactRow}>
+                <PhoneCallIcon size={16} color="#0f172a" />
+                <Text style={styles.contactText}>
+                  {owner?.mobile ? `+91 ${owner.mobile}` : 'No mobile set'}
+                </Text>
+              </View>
+              <View style={styles.contactRow}>
+                <LocationPinIcon size={16} color="#0f172a" />
+                <Text style={styles.contactText}>
+                  {owner?.city || owner?.state || 'City not set'}
+                </Text>
               </View>
             </View>
           </View>
+        </View>
 
+        <View style={styles.body}>
           <View style={styles.statsRow}>
-            <Stat label="Vehicles" value={String(dashboard?.vehicles?.total ?? 0)} />
-            <Stat label="Earnings" value={formatCurrency(owner?.walletBalance ?? dashboard?.walletBalance ?? 0)} />
-            <Stat label="Rating" value="4.8" />
+            <Stat value={String(dashboard?.vehicles?.total ?? 0)} label="Vehicles" highlight />
+            <Stat
+              value={formatCurrency(owner?.walletBalance ?? dashboard?.walletBalance ?? 0)}
+              label="Earnings"
+            />
+            <Stat value={averageRating != null ? averageRating.toFixed(1) : '—'} label="Rating" />
           </View>
 
           <View style={styles.menuCard}>
-            <MenuItem iconSource={EditIcon} label="Edit Profile" onPress={onOpenEditProfile} />
-            <MenuItem iconSource={BankIcon} label="Bank Details" onPress={onOpenBankDetails} />
-            <MenuItem iconSource={DocumentIcon} label="Documents" onPress={onOpenDocuments} />
-            <MenuItem iconSource={SettingIcon} label="Settings" onPress={onOpenSettings} />
-            <SupportMenuItem label="Support" onPress={onOpenSupport} />
+            <MenuItem
+              icon={<PencilIcon size={20} color="#fc4c02" />}
+              label="Edit Profile"
+              onPress={onOpenEditProfile}
+            />
+            <MenuItem
+              icon={<BankIcon size={20} color="#fc4c02" />}
+              label="Bank Details"
+              onPress={onOpenBankDetails}
+            />
+            <MenuItem
+              icon={<DocumentFileIcon size={20} color="#fc4c02" />}
+              label="Documents"
+              onPress={onOpenDocuments}
+            />
+            <MenuItem
+              icon={<SettingsIcon size={20} color="#fc4c02" />}
+              label="Settings"
+              onPress={onOpenSettings}
+            />
+            <MenuItem
+              icon={<HelpIcon size={20} color="#fc4c02" />}
+              label="Support"
+              onPress={onOpenSupport}
+            />
           </View>
 
           <Pressable style={styles.logout} onPress={onLogout}>
-            <Image source={LogoutIcon} style={styles.logoutIcon} resizeMode="contain" />
+            <LogoutIcon size={16} color="#ef4444" />
             <Text style={styles.logoutText}>Logout</Text>
           </Pressable>
-        </ScrollView>
-      </PageFrame>
-      <BottomTabs
-        active="profile"
-        onTabPress={onTabPress}
-      />
+        </View>
+      </ScrollView>
+
+      <BottomTabs active="profile" onTabPress={onTabPress} />
     </View>
   );
 }
 
-function InfoRow({ iconSource, value }: { iconSource: any; value: string }) {
-  return (
-    <View style={styles.infoRow}>
-      <View style={styles.infoIconContainer}>
-        <Image source={iconSource} style={styles.infoIconImage} resizeMode="contain" />
-      </View>
-      <Text style={styles.infoText}>{value}</Text>
-    </View>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  value,
+  label,
+  highlight,
+}: {
+  value: string;
+  label: string;
+  highlight?: boolean;
+}) {
   return (
     <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
+      <Text style={[styles.statValue, highlight && styles.statValueHighlight]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
-  content: { paddingBottom: 16 },
-  hero: {
+  root: { flex: 1, backgroundColor: 'transparent' },
+  scrollContent: {
+    paddingBottom: 24,
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
+    gap: 24,
+  },
+  headerTitle: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 32,
+  },
+  identityCard: {
     borderRadius: 24,
-    backgroundColor: COLORS.button,
-    padding: 16,
-    marginTop: 8,
-    marginBottom: 12,
+    backgroundColor: 'rgba(255,255,255,0.76)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    gap: 16,
   },
-  heroCard: {
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,244,239,0.92)',
-    padding: 14,
+  identityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  identityRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: COLORS.button,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#fc4c02',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
     overflow: 'hidden',
   },
   avatarImage: {
     width: '100%',
     height: '100%',
   },
-  avatarText: { color: '#fff', fontWeight: '900', fontSize: 17 },
-  identityCopy: { flex: 1 },
-  name: { color: COLORS.textPrimary, fontSize: 18, fontWeight: '900' },
-  badgeContainer: { marginTop: 4, flexDirection: 'row', alignItems: 'center' },
-  badgeIcon: { width: 12, height: 12, marginRight: 4 },
-  badge: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
+  avatarText: {
+    color: '#ffffff',
+    fontSize: 24,
+    lineHeight: 32,
+  },
+  identityTextWrap: {
+    flex: 1,
+    gap: 4,
+  },
+  name: {
+    color: '#0f172a',
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 28,
+  },
+  verifiedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  verifiedText: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
   contactList: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(33,48,74,0.08)',
-    marginTop: 12,
-    paddingTop: 8,
+    borderTopColor: '#e2e8f0',
+    paddingTop: 16,
+    gap: 12,
   },
-  infoRow: {
-    minHeight: 32,
+  contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   },
-  infoIconContainer: {
-    width: 20,
-    height: 20,
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+  contactText: {
+    color: '#0f172a',
+    fontSize: 14,
+    lineHeight: 20,
   },
-  infoIconImage: {
-    width: '100%',
-    height: '100%',
+  body: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    gap: 24,
   },
-  infoText: { color: COLORS.textPrimary, fontSize: 12 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   stat: {
-    width: '31%',
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.76)',
+    flex: 1,
+    height: 84,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.5)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    paddingVertical: 12,
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingTop: 16,
+    paddingHorizontal: 16,
     alignItems: 'center',
   },
-  statValue: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '900' },
-  statLabel: { marginTop: 4, color: COLORS.textSecondary, fontSize: 10 },
+  statValue: {
+    color: '#0f172a',
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 32,
+  },
+  statValueHighlight: {
+    color: '#fc4c02',
+  },
+  statLabel: {
+    color: '#64748b',
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 4,
+  },
   menuCard: {
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.76)',
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    overflow: 'hidden',
+    borderColor: 'rgba(255,255,255,0.62)',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
   },
   menuItem: {
-    minHeight: 56,
+    height: 72,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f2ebe7',
+    paddingHorizontal: 16,
+    gap: 12,
+    borderRadius: 16,
   },
-  menuIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#fff4ef',
+  menuIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(252,76,2,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
   },
-  menuIconImage: {
-    width: '100%',
-    height: '100%',
+  menuLabel: {
+    flex: 1,
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 24,
   },
-  menuLabel: { flex: 1, color: COLORS.textPrimary, fontSize: 13, fontWeight: '800' },
-  menuArrow: { color: COLORS.textSecondary, fontSize: 22 },
   logout: {
-    marginTop: 14,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ff8686',
+    height: 48,
+    borderRadius: 16,
+    borderWidth: 1.162,
+    borderColor: '#ef4444',
+    backgroundColor: '#f8fafc',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.55)',
-    flexDirection: 'row',
     gap: 8,
   },
-  logoutIcon: { width: 20, height: 20 },
-  logoutText: { color: '#ef4444', fontSize: 13, fontWeight: '900' },
+  logoutText: {
+    color: '#ef4444',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
 });
