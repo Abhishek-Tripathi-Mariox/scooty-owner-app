@@ -1,9 +1,10 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { GradientButton } from '../components/GradientButton';
 import { PageFrame } from '../components/PageFrame';
 import { FONTS } from '../constants/fonts';
+import { useStyles } from '../utils/responsiveStyles';
 
 function ClockIcon({ size = 16, color = '#464646' }: { size?: number; color?: string }) {
   return (
@@ -31,6 +32,7 @@ export function PendingApprovalScreen({
   rejectionReason?: string;
   onRetryKyc?: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   const isRejected = status === 'REJECTED';
   const reasonText = rejectionReason?.trim();
   const heading = isRejected ? 'KYC Rejected' : `Thank You, ${ownerName}`;
@@ -120,7 +122,7 @@ export function PendingApprovalScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   pageTitle: {
     fontFamily: FONTS.bold,
     fontSize: 20,
@@ -249,4 +251,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-});
+} as const;

@@ -262,6 +262,17 @@ export type OwnerSettings = {
     maintenance?: boolean;
   };
   language?: string;
+  location?: {
+    isEnabled?: boolean;
+    latitude?: number | null;
+    longitude?: number | null;
+    accuracy?: number | null;
+    source?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    updatedAt?: string | Date | null;
+  };
 };
 
 export type StationItem = {
@@ -630,6 +641,15 @@ export const ownerApi = {
     token: string,
     query: { search?: string; city?: string; state?: string; lat?: number | string; lng?: number | string } = {},
   ) => request<{ stations: StationItem[] }>('/owner/stations', { token, query }),
+  updateLocation: (
+    token: string,
+    location: NonNullable<OwnerSettings['location']>,
+  ) =>
+    request<{ settings: OwnerSettings }>('/owner/settings', {
+      method: 'PATCH',
+      token,
+      body: { settings: { location } },
+    }),
 };
 
 export const ownerApiErrorMessage = (error: unknown) =>

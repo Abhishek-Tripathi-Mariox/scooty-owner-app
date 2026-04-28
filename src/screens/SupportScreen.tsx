@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { AppBackground } from '../components/AppBackground';
-import { BottomTabs } from '../components/BottomTabs';
+import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import { GradientButton } from '../components/GradientButton';
 import {
   ArrowLeftIcon,
@@ -32,7 +32,7 @@ function GradientHeaderBg() {
           <Stop offset="100%" stopColor="#ff7a45" stopOpacity={1} />
         </LinearGradient>
       </Defs>
-      <Rect width="100%" height="100%" fill="url(#supportHeaderGrad)" rx={32} ry={32} />
+      <Rect width="100%" height="100%" fill="url(#supportHeaderGrad)" />
     </Svg>
   );
 }
@@ -56,13 +56,14 @@ function QuickAction({
 
 function FaqItem({ question, answer }: { question: string; answer?: string }) {
   const [open, setOpen] = useState(false);
+  const hasAnswer = !!answer;
   return (
-    <Pressable style={styles.faqItem} onPress={() => setOpen((v) => !v)}>
+    <Pressable style={styles.faqItem} onPress={() => hasAnswer && setOpen((v) => !v)}>
       <View style={styles.faqTopRow}>
         <Text style={styles.faqText}>{question}</Text>
         <ChevronDownIcon size={20} color="#64748b" />
       </View>
-      {open && answer ? <Text style={styles.faqAnswer}>{answer}</Text> : null}
+      {open && hasAnswer ? <Text style={styles.faqAnswer}>{answer}</Text> : null}
     </Pressable>
   );
 }
@@ -76,7 +77,8 @@ export function SupportScreen({
   onChangeMessage,
   onSubmitTicket,
   loading = false,
-  }: {
+  onTabPress,
+}: {
   onBack: () => void;
   faqs?: SupportFaq[];
   tickets?: unknown[];
@@ -86,7 +88,8 @@ export function SupportScreen({
   onChangeMessage: (value: string) => void;
   onSubmitTicket: () => void;
   loading?: boolean;
-  }) {
+  onTabPress?: (tab: TabKey) => void;
+}) {
   return (
     <View style={styles.root}>
       <AppBackground variant="auth" />
@@ -98,6 +101,8 @@ export function SupportScreen({
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
@@ -118,7 +123,7 @@ export function SupportScreen({
           </View>
 
           <View style={styles.body}>
-            <View>
+            <View style={styles.section}>
               <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
               <View style={styles.faqList}>
                 {faqs.length > 0 ? (
@@ -173,14 +178,15 @@ export function SupportScreen({
             <View style={styles.infoCard}>
               <Text style={styles.infoTitle}>24/7 Support Available</Text>
               <Text style={styles.infoText}>
-                Our support team is available round the clock to help you with any queries or issues.
+                Our support team is available round the clock to help you with any queries or
+                issues.
               </Text>
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <BottomTabs active="profile" onTabPress={() => undefined} />
+      <BottomTabs active="profile" onTabPress={onTabPress ?? (() => undefined)} />
     </View>
   );
 }
@@ -189,7 +195,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 120,
   },
   header: {
     paddingHorizontal: 24,
@@ -249,12 +255,14 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     gap: 24,
   },
+  section: {
+    gap: 12,
+  },
   sectionTitle: {
     color: '#0f172a',
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 28,
-    marginBottom: 12,
   },
   faqList: {
     gap: 12,
@@ -280,12 +288,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   faqItem: {
+    minHeight: 56,
     borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.62)',
-    paddingHorizontal: 16,
+    paddingHorizontal: 17,
     paddingVertical: 16,
+    justifyContent: 'center',
   },
   faqTopRow: {
     flexDirection: 'row',

@@ -4,7 +4,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -14,6 +13,8 @@ import { GradientButton } from '../components/GradientButton';
 import { OtpBoxes } from '../components/OtpBoxes';
 import { DEFAULT_PHONE_NUMBER, OTP_LENGTH, RESEND_SECONDS } from '../constants/auth';
 import { COLORS } from '../constants/theme';
+import { useResponsiveLayout } from '../utils/responsive';
+import { useStyles } from '../utils/responsiveStyles';
 
 export function OtpScreen({
   phoneNumber,
@@ -34,6 +35,8 @@ export function OtpScreen({
   onResend?: () => void;
   loading?: boolean;
 }) {
+  const layout = useResponsiveLayout();
+  const styles = useStyles(RAW_STYLES);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const otpInputRef = useRef<TextInput>(null);
 
@@ -76,6 +79,8 @@ export function OtpScreen({
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
       >
         <Pressable onPress={onBack} style={styles.backButton} hitSlop={10}>
@@ -122,7 +127,7 @@ export function OtpScreen({
             label={loading ? 'Verifying...' : 'Verify & Continue  →'}
             onPress={onVerify}
             disabled={!canVerify}
-            height={56}
+            height={layout.buttonHeight}
             radius={14}
             style={styles.button}
           />
@@ -139,7 +144,7 @@ export function OtpScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   screen: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -233,4 +238,4 @@ const styles = StyleSheet.create({
     left: -1000,
     top: -1000,
   },
-});
+} as const;

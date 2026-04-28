@@ -153,6 +153,8 @@ export function EditProfileScreen({
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
           <Pressable style={styles.avatarWrap} onPress={onPickProfilePhoto}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Linking, NativeModules, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, KeyboardAvoidingView, Linking, NativeModules, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import DocumentPicker, {
   isCancel as isDocumentPickerCancel,
   types as DocumentPickerTypes,
@@ -272,6 +272,11 @@ export default function App() {
     () => vehicleDetail || vehicles.find((vehicle) => vehicle._id === selectedVehicleId) || vehicles[0] || null,
     [selectedVehicleId, vehicleDetail, vehicles],
   );
+
+  const ownerCity = useMemo(() => {
+    const raw = (owner?.settings?.location?.city || owner?.city || '').trim();
+    return raw.split(',')[0].trim();
+  }, [owner?.settings?.location?.city, owner?.city]);
 
   const handleBottomTabPress = (tab: TabKey) => {
     if (tab === 'home') setStep('dashboard');
@@ -752,11 +757,11 @@ export default function App() {
     }
     if (step === 'vehicles' || step === 'vehicle-details' || step.startsWith('add-vehicle')) {
       void ownerApi
-        .stations(token)
+        .stations(token, ownerCity ? { city: ownerCity } : {})
         .then((result) => setStations(result.stations || []))
         .catch(() => setStations([]));
     }
-  }, [step, selectedVehicleId, token, earningsRange]);
+  }, [step, selectedVehicleId, token, earningsRange, ownerCity]);
 
   const handleContinue = async () => {
     if (normalizedPhone.length < 10) {
@@ -1365,6 +1370,7 @@ export default function App() {
             form={vehicleForm}
             onChangeForm={(patch) => setVehicleForm((current) => ({ ...current, ...patch }))}
             stations={stations}
+            ownerCity={ownerCity}
             frontPhoto={vehicleFiles.frontPhoto}
             sidePhoto={vehicleFiles.sidePhoto}
             rcDocument={vehicleFiles.rcDocument}
@@ -1410,6 +1416,7 @@ export default function App() {
             form={vehicleForm}
             onChangeForm={(patch) => setVehicleForm((current) => ({ ...current, ...patch }))}
             stations={stations}
+            ownerCity={ownerCity}
             frontPhoto={vehicleFiles.frontPhoto}
             sidePhoto={vehicleFiles.sidePhoto}
             rcDocument={vehicleFiles.rcDocument}
@@ -1455,6 +1462,7 @@ export default function App() {
             form={vehicleForm}
             onChangeForm={(patch) => setVehicleForm((current) => ({ ...current, ...patch }))}
             stations={stations}
+            ownerCity={ownerCity}
             frontPhoto={vehicleFiles.frontPhoto}
             sidePhoto={vehicleFiles.sidePhoto}
             rcDocument={vehicleFiles.rcDocument}
@@ -1500,6 +1508,7 @@ export default function App() {
             form={vehicleForm}
             onChangeForm={(patch) => setVehicleForm((current) => ({ ...current, ...patch }))}
             stations={stations}
+            ownerCity={ownerCity}
             frontPhoto={vehicleFiles.frontPhoto}
             sidePhoto={vehicleFiles.sidePhoto}
             rcDocument={vehicleFiles.rcDocument}
@@ -1735,7 +1744,10 @@ export default function App() {
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="dark-content" />
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         {isBootstrapping ? (
           <View style={styles.bootScreen}>
             <ActivityIndicator size="small" color="#fc4c02" />
@@ -1744,7 +1756,7 @@ export default function App() {
         ) : (
           renderScreen()
         )}
-      </View>
+      </KeyboardAvoidingView>
       <NoticeModal
         visible={Boolean(notice)}
         title={notice?.title || ''}

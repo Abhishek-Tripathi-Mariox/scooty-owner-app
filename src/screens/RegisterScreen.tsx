@@ -4,7 +4,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -12,6 +11,7 @@ import {
 import { AppBackground } from '../components/AppBackground';
 import { GradientButton } from '../components/GradientButton';
 import { COLORS } from '../constants/theme';
+import { useStyles } from '../utils/responsiveStyles';
 
 export function RegisterScreen({
   fullName,
@@ -42,6 +42,7 @@ export function RegisterScreen({
   onLoginPress: () => void;
   loading?: boolean;
 }) {
+  const styles = useStyles(RAW_STYLES);
   const canSubmit =
     !loading &&
     fullName.trim().length > 0 &&
@@ -60,6 +61,8 @@ export function RegisterScreen({
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
       >
         <Pressable onPress={onLoginPress} style={styles.backButton} hitSlop={10}>
@@ -143,6 +146,7 @@ function LabeledInput({
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   editable?: boolean;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -160,7 +164,7 @@ function LabeledInput({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   screen: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -282,4 +286,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-});
+} as const;

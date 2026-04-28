@@ -12,6 +12,7 @@ import {
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
+import { PrimaryButton } from '../components/PrimaryButton';
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -106,6 +107,8 @@ export function RequestPayoutScreen({
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.balanceCard}>
@@ -160,15 +163,12 @@ export function RequestPayoutScreen({
               ))}
             </View>
 
-            <Pressable
-              style={[styles.requestButton, loading && styles.requestButtonDisabled]}
+            <PrimaryButton
+              label={loading ? 'Submitting...' : 'Request Payout'}
               onPress={onSubmit}
               disabled={loading}
-            >
-              <Text style={styles.requestButtonText}>
-                {loading ? 'Submitting...' : 'Request Payout'}
-              </Text>
-            </Pressable>
+              style={styles.requestButton}
+            />
           </View>
 
           <Text style={styles.sectionTitle}>Payout History</Text>
@@ -357,19 +357,6 @@ const styles = StyleSheet.create({
   },
   requestButton: {
     height: 48,
-    borderRadius: 16,
-    backgroundColor: '#22c55e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  requestButtonDisabled: {
-    opacity: 0.6,
-  },
-  requestButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
   },
   sectionTitle: {
     color: '#0f172a',

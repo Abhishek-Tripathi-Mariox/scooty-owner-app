@@ -161,6 +161,7 @@ export function AddVehicleScreen({
   form,
   onChangeForm,
   stations = [],
+  ownerCity,
   frontPhoto,
   sidePhoto,
   rcDocument,
@@ -183,6 +184,7 @@ export function AddVehicleScreen({
   };
   onChangeForm: (patch: Partial<{ modelName: string; registrationNumber: string; chassisNumber: string; stationId: string }>) => void;
   stations?: StationItem[];
+  ownerCity?: string;
   frontPhoto?: KycUploadFile | null;
   sidePhoto?: KycUploadFile | null;
   rcDocument?: KycUploadFile | null;
@@ -195,6 +197,20 @@ export function AddVehicleScreen({
   onTabPress: (tab: TabKey) => void;
 }) {
   const progress = step === 1 ? 25 : step === 2 ? 50 : step === 3 ? 75 : 100;
+  const normalizedOwnerCity = (ownerCity || '')
+    .trim()
+    .toLowerCase()
+    .split(',')[0]
+    .trim();
+  const stationsInOwnerCity = React.useMemo(() => {
+    if (!normalizedOwnerCity) return stations;
+    return stations.filter((station) => {
+      const stationCity = (station.city || '').trim().toLowerCase();
+      if (stationCity) return stationCity === normalizedOwnerCity;
+      const address = (station.address || '').toLowerCase();
+      return address.includes(normalizedOwnerCity);
+    });
+  }, [stations, normalizedOwnerCity]);
   const isReadyToSubmit = Boolean(
     form.stationId &&
       frontPhoto &&
@@ -235,6 +251,8 @@ export function AddVehicleScreen({
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
           {step === 1 ? (
@@ -337,9 +355,11 @@ export function AddVehicleScreen({
               <View style={styles.formCard}>
                 <Text style={styles.sectionTitle}>Assign Station</Text>
                 <View style={styles.field}>
-                  <Text style={styles.label}>Select Station</Text>
+                  <Text style={styles.label}>
+                    {ownerCity ? `Select Station in ${ownerCity}` : 'Select Station'}
+                  </Text>
                   <StationDropdown
-                    stations={stations}
+                    stations={stationsInOwnerCity}
                     selectedId={form.stationId}
                     onSelect={(id) => onChangeForm({ stationId: id })}
                   />
@@ -348,7 +368,9 @@ export function AddVehicleScreen({
                 <View style={styles.noteCard}>
                   <Text style={styles.noteTitle}>📍 Note</Text>
                   <Text style={styles.noteText}>
-                    Your vehicle will be available for rides at this station once approved by admin.
+                    {ownerCity
+                      ? `Only stations in ${ownerCity} are listed. Your vehicle will be available for rides at this station once approved by admin.`
+                      : 'Your vehicle will be available for rides at this station once approved by admin.'}
                   </Text>
                 </View>
               </View>

@@ -1,10 +1,12 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { BrandMark } from '../components/BrandMark';
 import { GradientButton } from '../components/GradientButton';
 import { PhoneIcon } from '../components/PhoneIcon';
 import { COLORS } from '../constants/theme';
+import { scaleSize, useResponsiveLayout } from '../utils/responsive';
+import { useStyles } from '../utils/responsiveStyles';
 
 const MOBILE_LENGTH = 10;
 
@@ -25,12 +27,17 @@ export function LoginScreen({
   onRegisterPress?: () => void;
   loading?: boolean;
 }) {
+  const layout = useResponsiveLayout();
+  const styles = useStyles(RAW_STYLES);
   const canSubmit = acceptedTerms && mobileNumber.length === MOBILE_LENGTH && !loading;
+  const iconSize = scaleSize(20, layout.screenWidth);
 
   return (
     <ScrollView
       contentContainerStyle={styles.screen}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      automaticallyAdjustKeyboardInsets
       showsVerticalScrollIndicator={false}
     >
       <AppBackground variant="auth" />
@@ -43,13 +50,13 @@ export function LoginScreen({
         <Text style={styles.fieldLabel}>Mobile Number</Text>
         <View style={styles.inputRow}>
           <View style={styles.inputIconWrap}>
-            <PhoneIcon width={20} height={20} />
+            <PhoneIcon width={iconSize} height={iconSize} />
           </View>
           <TextInput
             value={mobileNumber}
             onChangeText={(value) => onChangeMobile(value.replace(/\D/g, '').slice(0, MOBILE_LENGTH))}
             placeholder="Enter your mobile number"
-            placeholderTextColor="#717182"
+            placeholderTextColor={COLORS.textSecondary}
             keyboardType="phone-pad"
             maxLength={MOBILE_LENGTH}
             style={styles.input}
@@ -70,7 +77,7 @@ export function LoginScreen({
           label={loading ? 'Sending OTP...' : 'Send OTP  →'}
           onPress={onContinue}
           disabled={!canSubmit}
-          height={56}
+          height={layout.buttonHeight}
           radius={12}
           style={styles.sendButton}
         />
@@ -88,7 +95,7 @@ export function LoginScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   screen: {
     flexGrow: 1,
     alignItems: 'center',
@@ -107,9 +114,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     paddingTop: 25,
     paddingBottom: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.62)',
+    borderColor: COLORS.cardBorder,
   },
   fieldLabel: {
     color: COLORS.textPrimary,
@@ -122,8 +129,8 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderColor: COLORS.line,
+    backgroundColor: COLORS.inputBg,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -153,7 +160,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 3,
     borderWidth: 1,
-    borderColor: '#717182',
+    borderColor: COLORS.textSecondary,
     marginTop: 4,
     marginRight: 8,
     alignItems: 'center',
@@ -161,8 +168,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   checkboxChecked: {
-    backgroundColor: '#fc4c02',
-    borderColor: '#fc4c02',
+    backgroundColor: COLORS.brandPrimary,
+    borderColor: COLORS.brandPrimary,
   },
   checkboxMark: {
     color: '#fff',
@@ -172,7 +179,7 @@ const styles = StyleSheet.create({
   },
   termsText: {
     flex: 1,
-    color: '#717182',
+    color: COLORS.textSecondary,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 20,
@@ -198,7 +205,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   footerLink: {
-    color: '#fc4f07',
+    color: COLORS.accent,
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 21,
@@ -208,6 +215,6 @@ const styles = StyleSheet.create({
     paddingTop: 48,
     fontSize: 12,
     lineHeight: 16,
-    color: '#717182',
+    color: COLORS.textSecondary,
   },
-});
+} as const;

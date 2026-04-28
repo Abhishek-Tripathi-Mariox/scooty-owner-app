@@ -7,7 +7,7 @@ import {
   ClockIcon,
   EyeIcon,
   InfoIcon,
-  PencilIcon,
+  SquarePenIcon as PencilIcon,
 } from '../components/OwnerIcons';
 import { Owner, OwnerKyc, VehicleItem } from '../services/ownerApi';
 import { formatShortDate } from '../utils/format';
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   docCard: {
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.62)',
     paddingHorizontal: 16,

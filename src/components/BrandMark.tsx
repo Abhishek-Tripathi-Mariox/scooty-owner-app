@@ -12,8 +12,8 @@ export function BrandMark() {
           <Svg width="100%" height="100%">
             <Defs>
               <LinearGradient id="brandBadge" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#fc4d03" stopOpacity="1" />
-                <Stop offset="100%" stopColor="#ff7a45" stopOpacity="1" />
+                <Stop offset="0%" stopColor={COLORS.brandPrimary} stopOpacity="1" />
+                <Stop offset="100%" stopColor={COLORS.brandSecondary} stopOpacity="1" />
               </LinearGradient>
             </Defs>
             <Rect width="100%" height="100%" fill="url(#brandBadge)" rx={24} ry={24} />

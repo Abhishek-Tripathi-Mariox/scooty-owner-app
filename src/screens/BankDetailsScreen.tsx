@@ -236,6 +236,8 @@ export function BankDetailsScreen({
             style={styles.profileModalScroll}
             contentContainerStyle={styles.profileModalScrollContent}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets
           >
             <View style={styles.profileModal}>
               <View style={styles.profileModalHeader}>
@@ -296,9 +298,13 @@ export function BankDetailsScreen({
                   <Pressable style={styles.profileModalCancel} onPress={onBack}>
                     <Text style={styles.profileModalCancelText}>Cancel</Text>
                   </Pressable>
-                  <Pressable style={styles.profileModalSubmit} onPress={onSubmit}>
-                    <Text style={styles.profileModalSubmitText}>Submit Request</Text>
-                  </Pressable>
+                  <GradientButton
+                    label="Submit Request"
+                    onPress={onSubmit}
+                    height={48}
+                    radius={12}
+                    style={styles.profileModalSubmit}
+                  />
                 </View>
               </View>
             </View>
@@ -882,21 +888,5 @@ const styles = StyleSheet.create({
   },
   profileModalSubmit: {
     flex: 1,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#fc4c02',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
-  },
-  profileModalSubmitText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 21,
   },
 });

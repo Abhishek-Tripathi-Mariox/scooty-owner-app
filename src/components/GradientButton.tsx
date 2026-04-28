@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { COLORS } from '../constants/theme';
 
 export function GradientButton({
   label,
@@ -39,8 +40,8 @@ export function GradientButton({
         <Svg width="100%" height="100%">
           <Defs>
             <LinearGradient id="ownerBtnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <Stop offset="0%" stopColor="#fc4c02" stopOpacity="1" />
-              <Stop offset="100%" stopColor="#ff7a45" stopOpacity="1" />
+              <Stop offset="0%" stopColor={COLORS.brandPrimary} stopOpacity="1" />
+              <Stop offset="100%" stopColor={COLORS.brandSecondary} stopOpacity="1" />
             </LinearGradient>
           </Defs>
           <Rect width="100%" height="100%" fill="url(#ownerBtnGrad)" />

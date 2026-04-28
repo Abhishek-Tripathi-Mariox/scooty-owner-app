@@ -4,6 +4,8 @@ import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg'
 import { AppBackground } from '../components/AppBackground';
 import { GradientButton } from '../components/GradientButton';
 import { COLORS } from '../constants/theme';
+import { scaleSize, useResponsiveLayout } from '../utils/responsive';
+import { useStyles } from '../utils/responsiveStyles';
 
 function ActivatedIcon({ size = 96 }: { size?: number }) {
   return (
@@ -46,6 +48,9 @@ export function AccountActivatedScreen({
 }: {
   onGoToDashboard: () => void;
 }) {
+  const layout = useResponsiveLayout();
+  const styles = useStyles(RAW_STYLES);
+  const w = layout.screenWidth;
   return (
     <View style={styles.root}>
       <AppBackground variant="auth" />
@@ -53,9 +58,9 @@ export function AccountActivatedScreen({
 
       <View style={styles.sheet}>
         <View style={styles.iconWrap}>
-          <GradientCircle size={144} />
+          <GradientCircle size={scaleSize(144, w)} />
           <View style={styles.iconOverlay} pointerEvents="none">
-            <ActivatedIcon size={96} />
+            <ActivatedIcon size={scaleSize(96, w)} />
           </View>
         </View>
 
@@ -68,7 +73,7 @@ export function AccountActivatedScreen({
           onPress={onGoToDashboard}
           style={styles.button}
           labelStyle={styles.buttonLabel}
-          height={56}
+          height={layout.buttonHeight}
           radius={14}
         />
       </View>
@@ -76,7 +81,7 @@ export function AccountActivatedScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -135,4 +140,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 28,
   },
-});
+} as const;

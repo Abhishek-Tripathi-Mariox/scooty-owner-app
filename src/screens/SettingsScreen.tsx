@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.87)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.62)',
     paddingHorizontal: 16,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: '#0f172a',
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '600',
     lineHeight: 27,
     marginBottom: 16,
@@ -217,6 +217,7 @@ const styles = StyleSheet.create({
   notificationsList: {
     gap: 16,
     paddingBottom: 8,
+    fontSize: 20,
   },
   notificationRow: {
     flexDirection: 'row',
