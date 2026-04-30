@@ -103,6 +103,7 @@ function FloatingField({
   keyboardType = 'default',
   editable = true,
   autoCapitalize,
+  chipColor,
 }: {
   label: string;
   value: string;
@@ -111,10 +112,11 @@ function FloatingField({
   keyboardType?: 'default' | 'email-address' | 'number-pad' | 'phone-pad';
   editable?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  chipColor?: string;
 }) {
   return (
     <View style={styles.field}>
-      <View style={styles.labelChip}>
+      <View style={[styles.labelChip, chipColor ? { backgroundColor: chipColor } : null]}>
         <Text style={styles.labelChipText}>{label}</Text>
       </View>
       <TextInput
@@ -220,6 +222,7 @@ export function EditProfileScreen({
               value={form.fullName}
               onChangeText={(v) => onChangeForm({ fullName: v })}
               placeholder="Enter full name"
+              chipColor="#ffebe1"
             />
 
             <FloatingField
@@ -229,10 +232,11 @@ export function EditProfileScreen({
               placeholder="your@email.com"
               keyboardType="email-address"
               autoCapitalize="none"
+              chipColor="#ffe5dd"
             />
 
             <View style={styles.field}>
-              <View style={styles.labelChip}>
+              <View style={[styles.labelChip, { backgroundColor: '#ffe0dd' }]}>
                 <Text style={styles.labelChipText}>Phone Number</Text>
               </View>
               <View style={[styles.input, styles.phoneRow]}>
@@ -251,6 +255,7 @@ export function EditProfileScreen({
               value={form.address}
               onChangeText={(v) => onChangeForm({ address: v })}
               placeholder="Enter current address"
+              chipColor="#fcd5db"
             />
 
             <View style={styles.row}>
@@ -261,11 +266,12 @@ export function EditProfileScreen({
                   onChangeText={(v) => onChangeForm({ pincode: v })}
                   placeholder="203207"
                   keyboardType="number-pad"
+                  chipColor="#f8e1e3"
                 />
               </View>
               <View style={styles.rowHalf}>
                 <View style={styles.field}>
-                  <View style={styles.labelChip}>
+                  <View style={[styles.labelChip, { backgroundColor: '#f3e9e9' }]}>
                     <Text style={styles.labelChipText}>State</Text>
                   </View>
                   <Pressable
@@ -417,7 +423,7 @@ const styles = StyleSheet.create({
     top: -8,
     left: 16,
     paddingHorizontal: 8,
-    backgroundColor: '#fbe9e6',
+    backgroundColor: '#fbe6d6',
     zIndex: 2,
   },
   labelChipText: {
@@ -429,8 +435,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(27,29,33,0.1)',
-    backgroundColor: '#ffffff',
+    borderColor: 'rgba(27,29,33,0.18)',
     paddingHorizontal: 24,
     color: '#1b1d21',
     fontSize: 14,
@@ -462,7 +467,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(27,29,33,0.1)',
-    backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -526,7 +530,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: '#1f456b',
   },
   stateItemText: {
     color: '#1b1d21',
