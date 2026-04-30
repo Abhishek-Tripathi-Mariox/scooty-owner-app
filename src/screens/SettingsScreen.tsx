@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.87)',
+    backgroundColor: 'rgba(255, 255, 255, 0.49)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.62)',
     paddingHorizontal: 16,

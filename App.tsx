@@ -780,7 +780,15 @@ export default function App() {
       setOtp('');
       setStep('otp');
     } catch (error) {
-      Alert.alert('Unable to send OTP', ownerApiErrorMessage(error));
+      const message = ownerApiErrorMessage(error);
+      if (/USER\s+account/i.test(message)) {
+        Alert.alert(
+          'Use the User app',
+          'This mobile number is registered as a customer. Please install and login with the MOVYRA User app to continue.',
+        );
+      } else {
+        Alert.alert('Unable to send OTP', message);
+      }
     } finally {
       setAuthBusy(false);
     }

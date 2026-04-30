@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   identityCard: {
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 252, 252, 0.93)',
+    backgroundColor: 'rgba(255, 252, 252, 0.73)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.62)',
     paddingHorizontal: 20,
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 70,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.53)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.62)',
     paddingTop: 10,
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   menuCard: {
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 251, 251, 0.83)',
+    backgroundColor: 'rgba(255, 251, 251, 0.55)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.62)',
     paddingVertical: 8,

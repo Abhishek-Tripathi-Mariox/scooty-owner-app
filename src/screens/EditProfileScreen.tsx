@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   FlatList,
   Image,
@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
 import { AppBackground } from '../components/AppBackground';
 import { GradientButton } from '../components/GradientButton';
 import {
@@ -60,6 +61,40 @@ const INDIAN_STATES = [
   'Puducherry',
 ];
 
+function IndianFlag({ size = 22 }: { size?: number }) {
+  const stripeH = size / 3;
+  const cx = size / 2;
+  const cy = size / 2;
+  const chakraR = stripeH * 0.4;
+  return (
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <Rect x={0} y={0} width={size} height={stripeH} fill="#FF9933" />
+      <Rect x={0} y={stripeH} width={size} height={stripeH} fill="#FFFFFF" />
+      <Rect x={0} y={stripeH * 2} width={size} height={stripeH} fill="#138808" />
+      <Circle cx={cx} cy={cy} r={chakraR} stroke="#000080" strokeWidth={1} fill="none" />
+      <Line x1={cx - chakraR} y1={cy} x2={cx + chakraR} y2={cy} stroke="#000080" strokeWidth={0.6} />
+      <Line x1={cx} y1={cy - chakraR} x2={cx} y2={cy + chakraR} stroke="#000080" strokeWidth={0.6} />
+      <Line x1={cx - chakraR * 0.7} y1={cy - chakraR * 0.7} x2={cx + chakraR * 0.7} y2={cy + chakraR * 0.7} stroke="#000080" strokeWidth={0.5} />
+      <Line x1={cx - chakraR * 0.7} y1={cy + chakraR * 0.7} x2={cx + chakraR * 0.7} y2={cy - chakraR * 0.7} stroke="#000080" strokeWidth={0.5} />
+    </Svg>
+  );
+}
+
+function VerifiedCheck({ size = 18 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={10} fill="#0f172a" />
+      <Path
+        d="M8 12.5l2.5 2.5L16 9"
+        stroke="#FFFFFF"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 function FloatingField({
   label,
   value,
@@ -67,6 +102,7 @@ function FloatingField({
   placeholder,
   keyboardType = 'default',
   editable = true,
+  autoCapitalize,
 }: {
   label: string;
   value: string;
@@ -74,20 +110,22 @@ function FloatingField({
   placeholder?: string;
   keyboardType?: 'default' | 'email-address' | 'number-pad' | 'phone-pad';
   editable?: boolean;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }) {
   return (
     <View style={styles.field}>
-      <View style={styles.fieldLabelWrap}>
-        <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.labelChip}>
+        <Text style={styles.labelChipText}>{label}</Text>
       </View>
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor="rgba(27,29,33,0.4)"
         keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
         editable={editable}
-        style={[styles.input, !editable && styles.inputDisabled]}
+        style={styles.input}
       />
     </View>
   );
@@ -114,20 +152,24 @@ export function EditProfileScreen({
     state: string;
     pincode: string;
   };
-  onChangeForm: (patch: Partial<{ fullName: string; email: string; mobile: string; address: string; city: string; state: string; pincode: string }>) => void;
+  onChangeForm: (
+    patch: Partial<{
+      fullName: string;
+      email: string;
+      mobile: string;
+      address: string;
+      city: string;
+      state: string;
+      pincode: string;
+    }>,
+  ) => void;
   profilePhoto?: KycUploadFile | null;
   onPickProfilePhoto: () => void;
   onSubmit: () => void;
   loading?: boolean;
 }) {
-  const initials = (form.fullName || owner?.name || 'Owner')
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] || '')
-    .join('')
-    .toUpperCase();
   const profilePhotoUrl = owner?.profilePhotoUrl || '';
+  const hasPhoto = Boolean(profilePhoto?.uri || profilePhotoUrl);
   const [statePickerOpen, setStatePickerOpen] = useState(false);
   const [stateSearch, setStateSearch] = useState('');
 
@@ -159,15 +201,13 @@ export function EditProfileScreen({
         >
           <Pressable style={styles.avatarWrap} onPress={onPickProfilePhoto}>
             <View style={styles.avatar}>
-              {profilePhoto?.uri || profilePhotoUrl ? (
+              {hasPhoto ? (
                 <Image
                   source={{ uri: profilePhoto?.uri || profilePhotoUrl }}
                   style={styles.avatarImage}
                   resizeMode="cover"
                 />
-              ) : (
-                <Text style={styles.avatarText}>{initials}</Text>
-              )}
+              ) : null}
             </View>
             <View style={styles.avatarOverlay} pointerEvents="none">
               <CameraIcon size={32} color="#ffffff" />
@@ -181,32 +221,38 @@ export function EditProfileScreen({
               onChangeText={(v) => onChangeForm({ fullName: v })}
               placeholder="Enter full name"
             />
+
             <FloatingField
               label="Email Address"
               value={form.email}
               onChangeText={(v) => onChangeForm({ email: v })}
               placeholder="your@email.com"
               keyboardType="email-address"
+              autoCapitalize="none"
             />
-            <FloatingField
-              label="Phone Number"
-              value={form.mobile ? `+91 ${form.mobile}` : ''}
-              onChangeText={() => undefined}
-              placeholder="+91 98765 43210"
-              editable={false}
-            />
+
+            <View style={styles.field}>
+              <View style={styles.labelChip}>
+                <Text style={styles.labelChipText}>Phone Number</Text>
+              </View>
+              <View style={[styles.input, styles.phoneRow]}>
+                <View style={styles.flagCircle}>
+                  <IndianFlag size={22} />
+                </View>
+                <Text style={styles.phoneText} numberOfLines={1}>
+                  {form.mobile ? `+91 ${form.mobile}` : '+91 98765 43210'}
+                </Text>
+                <VerifiedCheck size={20} />
+              </View>
+            </View>
+
             <FloatingField
               label="Current Address"
               value={form.address}
               onChangeText={(v) => onChangeForm({ address: v })}
               placeholder="Enter current address"
             />
-            <FloatingField
-              label="City"
-              value={form.city || ''}
-              onChangeText={(v) => onChangeForm({ city: v })}
-              placeholder="Enter city"
-            />
+
             <View style={styles.row}>
               <View style={styles.rowHalf}>
                 <FloatingField
@@ -219,8 +265,8 @@ export function EditProfileScreen({
               </View>
               <View style={styles.rowHalf}>
                 <View style={styles.field}>
-                  <View style={styles.fieldLabelWrap}>
-                    <Text style={styles.fieldLabel}>State</Text>
+                  <View style={styles.labelChip}>
+                    <Text style={styles.labelChipText}>State</Text>
                   </View>
                   <Pressable
                     style={styles.selector}
@@ -283,21 +329,18 @@ export function EditProfileScreen({
               style={styles.stateList}
               renderItem={({ item }) => (
                 <Pressable
-                  style={[
-                    styles.stateRow,
-                    item === form.state && styles.stateRowSelected,
-                  ]}
+                  style={styles.stateItem}
                   onPress={() => {
                     onChangeForm({ state: item });
                     setStatePickerOpen(false);
-                    setStateSearch('');
                   }}
                 >
-                  <Text style={styles.stateName}>{item}</Text>
-                  {item === form.state ? <Text style={styles.stateCheck}>✓</Text> : null}
+                  <Text style={styles.stateItemText}>{item}</Text>
                 </Pressable>
               )}
-              ListEmptyComponent={<Text style={styles.emptyText}>No state found</Text>}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>No state matches your search.</Text>
+              }
             />
           </View>
         </View>
@@ -335,42 +378,32 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 24,
-    paddingBottom: 24,
-    alignItems: 'stretch',
+    paddingBottom: 32,
   },
   avatarWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 104,
+    height: 104,
+    borderRadius: 36,
     alignSelf: 'center',
-    marginBottom: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 32,
     overflow: 'hidden',
   },
   avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: '#fc4c02',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 104,
+    height: 104,
+    borderRadius: 36,
+    backgroundColor: '#3a2a22',
     overflow: 'hidden',
   },
   avatarImage: {
     width: '100%',
     height: '100%',
   },
-  avatarText: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: '700',
-  },
   avatarOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(22,22,22,0.55)',
+    backgroundColor: 'rgba(22,22,22,0.7)',
   },
   formCard: {
     gap: 24,
@@ -379,16 +412,16 @@ const styles = StyleSheet.create({
   field: {
     position: 'relative',
   },
-  fieldLabelWrap: {
+  labelChip: {
     position: 'absolute',
     top: -8,
     left: 16,
-    backgroundColor: '#fbe9e6',
     paddingHorizontal: 8,
+    backgroundColor: '#fbe9e6',
     zIndex: 2,
   },
-  fieldLabel: {
-    color: 'rgba(27,29,33,0.5)',
+  labelChipText: {
+    color: 'rgba(27,29,33,0.4)',
     fontSize: 12,
     lineHeight: 16,
   },
@@ -402,8 +435,27 @@ const styles = StyleSheet.create({
     color: '#1b1d21',
     fontSize: 14,
   },
-  inputDisabled: {
-    opacity: 0.6,
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  flagCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    overflow: 'hidden',
+    marginRight: 12,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  phoneText: {
+    flex: 1,
+    color: '#1b1d21',
+    fontSize: 14,
   },
   selector: {
     height: 56,
@@ -411,7 +463,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(27,29,33,0.1)',
     backgroundColor: '#ffffff',
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -423,7 +475,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   selectorPlaceholder: {
-    color: '#9ca3af',
+    color: 'rgba(27,29,33,0.4)',
   },
   row: {
     flexDirection: 'row',
@@ -433,29 +485,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   saveButton: {
-    alignSelf: 'stretch',
+    marginTop: 8,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(15,23,42,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
   },
   modalBackdropTouchable: {
     ...StyleSheet.absoluteFillObject,
   },
   modalCard: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: 20,
+    width: '88%',
+    maxHeight: '70%',
     backgroundColor: '#ffffff',
+    borderRadius: 24,
     padding: 16,
   },
   modalTitle: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#1b1d21',
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 12,
   },
   searchInput: {
@@ -463,40 +514,28 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 12,
-    color: '#0f172a',
+    paddingHorizontal: 14,
+    color: '#1b1d21',
     fontSize: 14,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   stateList: {
     maxHeight: 320,
   },
-  stateRow: {
+  stateItem: {
     paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
-  stateRowSelected: {
-    backgroundColor: 'rgba(252,76,2,0.1)',
-  },
-  stateName: {
-    color: '#0f172a',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  stateCheck: {
-    color: '#fc4c02',
-    fontSize: 16,
-    fontWeight: '700',
+  stateItemText: {
+    color: '#1b1d21',
+    fontSize: 15,
   },
   emptyText: {
-    paddingVertical: 16,
-    textAlign: 'center',
-    color: '#64748b',
+    color: '#94a3b8',
     fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 24,
   },
 });
