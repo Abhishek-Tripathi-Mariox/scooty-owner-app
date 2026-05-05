@@ -1,66 +1,38 @@
-import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import {
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import {
-  CheckCircleIcon,
+  ArrowLeftIcon,
   ChevronRightIcon,
   CreditCardIcon,
   DocumentFileIcon,
   HelpIcon,
-  LocationPinIcon,
   LogoutIcon,
-  MailIcon,
-  PhoneCallIcon,
   SettingsIcon,
   SquarePenIcon,
 } from '../components/OwnerIcons';
 import { Bank, Dashboard, Owner, OwnerKyc } from '../services/ownerApi';
-import { formatCurrency } from '../utils/format';
-import { FONTS } from '../constants/fonts';
 
-function GradientHeaderBg() {
-  return (
-    <Svg width="100%" height="100%">
-      <Defs>
-        <LinearGradient
-          id="profileHeaderGrad"
-          x1="0%"
-          y1="0%"
-          x2="100%"
-          y2="0%"
-        >
-          <Stop offset="0%" stopColor="#FC4C02" stopOpacity="1" />
-          <Stop offset="100%" stopColor="#FF7A45" stopOpacity="1" />
-        </LinearGradient>
-      </Defs>
-      <Rect width="100%" height="100%" fill="url(#profileHeaderGrad)" />
-    </Svg>
-  );
-}
+type ProfileMenuKey = 'editProfile' | 'bankDetails' | 'documents' | 'settings' | 'support';
 
-function MenuItem({
-  icon,
-  label,
-  onPress,
-}: {
+type ProfileMenuItem = {
+  key: ProfileMenuKey;
+  title: string;
+  subtitle?: string;
   icon: React.ReactNode;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable style={styles.menuItem} onPress={onPress}>
-      <View style={styles.menuItemLeft}>
-        <View style={styles.menuIconWrap}>{icon}</View>
-        <Text style={styles.menuLabel}>{label}</Text>
-      </View>
-      <ChevronRightIcon size={20} color="#64748b" />
-    </Pressable>
-  );
-}
+  onPress?: () => void;
+};
 
 export function ProfileScreen({
+  onBack,
   onOpenEditProfile,
   onOpenSettings,
   onOpenSupport,
@@ -69,9 +41,6 @@ export function ProfileScreen({
   onLogout,
   onTabPress,
   owner,
-  bank: _bank,
-  dashboard,
-  kyc,
 }: {
   onBack: () => void;
   onOpenEditProfile: () => void;
@@ -86,8 +55,10 @@ export function ProfileScreen({
   dashboard?: Dashboard | null;
   kyc?: OwnerKyc | null;
 }) {
-  const name = owner?.name || owner?.companyName || 'Vehicle Owner';
-  const initials = name
+  const displayName = owner?.name || owner?.companyName || 'Profile not set';
+  const displayPhone = owner?.mobile ? `+91 ${owner.mobile}` : 'Mobile number unavailable';
+  const displayEmail = owner?.email || 'Email not added';
+  const initials = displayName
     .trim()
     .split(/\s+/)
     .slice(0, 2)
@@ -95,171 +66,161 @@ export function ProfileScreen({
     .join('')
     .toUpperCase();
   const profilePhotoUrl = owner?.profilePhotoUrl || '';
-  const isVerified = kyc?.status === 'APPROVED' || owner?.kycStatus === 'APPROVED';
-  const averageRating = dashboard?.averageRating;
+
+  const editItem: ProfileMenuItem = {
+    key: 'editProfile',
+    title: 'Edit Profile',
+    icon: <SquarePenIcon size={22} color="#fc4c02" />,
+    onPress: onOpenEditProfile,
+  };
+
+  const menu: ProfileMenuItem[] = [
+    {
+      key: 'bankDetails',
+      title: 'Bank Details',
+      icon: <CreditCardIcon size={22} color="#fc4c02" />,
+      onPress: onOpenBankDetails,
+    },
+    {
+      key: 'documents',
+      title: 'Documents',
+      icon: <DocumentFileIcon size={22} color="#fc4c02" />,
+      onPress: onOpenDocuments,
+    },
+    {
+      key: 'settings',
+      title: 'Settings',
+      icon: <SettingsIcon size={22} color="#fc4c02" />,
+      onPress: onOpenSettings,
+    },
+    {
+      key: 'support',
+      title: 'Help & Support',
+      icon: <HelpIcon size={22} color="#fc4c02" />,
+      onPress: onOpenSupport,
+    },
+  ];
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.safe}>
       <AppBackground variant="auth" />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <View style={StyleSheet.absoluteFill}>
-            <GradientHeaderBg />
-          </View>
-          <Text style={styles.headerTitle}>Profile</Text>
+      <View style={styles.header}>
+        <Pressable onPress={onBack} style={styles.backButton}>
+          <ArrowLeftIcon size={24} color="#1c1c1e" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Profile</Text>
+      </View>
 
-          <View style={styles.identityCard}>
-            <View style={styles.identityRow}>
-              <View style={styles.avatar}>
-                {profilePhotoUrl ? (
-                  <Image source={{ uri: profilePhotoUrl }} style={styles.avatarImage} resizeMode="cover" />
-                ) : (
-                  <Text style={styles.avatarText}>{initials}</Text>
-                )}
-              </View>
-              <View style={styles.identityTextWrap}>
-                <Text style={styles.name}>{name}</Text>
-                <View style={styles.verifiedRow}>
-                  <CheckCircleIcon size={16} color="#0f172a" />
-                  <Text style={styles.verifiedText}>
-                    {isVerified ? 'Verified Owner' : 'Owner Profile'}
-                  </Text>
-                </View>
-              </View>
-            </View>
+      <View style={styles.profileCard}>
+        <View style={styles.avatar}>
+          {profilePhotoUrl ? (
+            <Image source={{ uri: profilePhotoUrl }} style={styles.avatarImage} resizeMode="cover" />
+          ) : (
+            <Text style={styles.avatarText}>{initials || 'OW'}</Text>
+          )}
+        </View>
+        <View style={styles.profileText}>
+          <Text style={styles.name} numberOfLines={1}>
+            {displayName}
+          </Text>
+          <Text style={styles.meta} numberOfLines={1}>
+            {displayPhone}
+          </Text>
+          <Text style={styles.meta} numberOfLines={1}>
+            {displayEmail}
+          </Text>
+        </View>
+        <Pressable onPress={onOpenEditProfile} style={styles.editButton}>
+          <SquarePenIcon size={20} color="#363636" />
+        </Pressable>
+      </View>
 
-            <View style={styles.contactList}>
-              <View style={styles.contactRow}>
-                <MailIcon size={16} color="#0f172a" />
-                <Text style={styles.contactText}>{owner?.email || 'No email set'}</Text>
-              </View>
-              <View style={styles.contactRow}>
-                <PhoneCallIcon size={16} color="#0f172a" />
-                <Text style={styles.contactText}>
-                  {owner?.mobile ? `+91 ${owner.mobile}` : 'No mobile set'}
-                </Text>
-              </View>
-              <View style={styles.contactRow}>
-                <LocationPinIcon size={16} color="#0f172a" />
-                <Text style={styles.contactText}>
-                  {owner?.city || owner?.state || 'City not set'}
-                </Text>
-              </View>
-            </View>
-          </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.menuCard}>
+          <MenuRow item={editItem} onPress={editItem.onPress ?? (() => {})} />
         </View>
 
-        <View style={styles.body}>
-          <View style={styles.statsRow}>
-            <Stat value={String(dashboard?.vehicles?.total ?? 0)} label="Vehicles" highlight />
-            <Stat
-              value={formatCurrency(owner?.walletBalance ?? dashboard?.walletBalance ?? 0)}
-              label="Earnings"
-            />
-            <Stat value={averageRating != null ? averageRating.toFixed(1) : '—'} label="Rating" />
-          </View>
-
-          <View style={styles.menuCard}>
-            <MenuItem
-              icon={<SquarePenIcon size={20} color="#fc4c02" />}
-              label="Edit Profile"
-              onPress={onOpenEditProfile}
-            />
-            <MenuItem
-              icon={<CreditCardIcon size={20} color="#fc4c02" />}
-              label="Bank Details"
-              onPress={onOpenBankDetails}
-            />
-            <MenuItem
-              icon={<DocumentFileIcon size={20} color="#fc4c02" />}
-              label="Documents"
-              onPress={onOpenDocuments}
-            />
-            <MenuItem
-              icon={<SettingsIcon size={20} color="#FC4C02" />}
-              label="Settings"
-              onPress={onOpenSettings}
-            />
-            <MenuItem
-              icon={<HelpIcon size={20} color="#FC4C02" />}
-              label="Support"
-              onPress={onOpenSupport}
-            />
-          </View>
-
-          <Pressable style={styles.logout} onPress={onLogout}>
-            <LogoutIcon size={16} color="#FC4C02" />
-            <Text style={styles.logoutText}>Logout</Text>
-          </Pressable>
+        <View style={styles.menuCard}>
+          {menu.map((m, i) => (
+            <View key={m.key}>
+              <MenuRow item={m} onPress={m.onPress ?? (() => {})} />
+              {i < menu.length - 1 ? <View style={styles.menuDivider} /> : null}
+            </View>
+          ))}
         </View>
+
+        <Pressable style={styles.logoutButton} onPress={onLogout}>
+          <LogoutIcon size={18} color="#ef4444" />
+          <Text style={styles.logoutText}>Logout</Text>
+        </Pressable>
+
+        <Text style={styles.version}>Version 1.0.0</Text>
       </ScrollView>
 
       <BottomTabs active="profile" onTabPress={onTabPress} />
-    </View>
+    </SafeAreaView>
   );
 }
 
-function Stat({
-  value,
-  label,
-  highlight,
-}: {
-  value: string;
-  label: string;
-  highlight?: boolean;
-}) {
+function MenuRow({ item, onPress }: { item: ProfileMenuItem; onPress: () => void }) {
   return (
-    <View style={styles.stat}>
-      <Text style={[styles.statValue, highlight && styles.statValueHighlight]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
+    <Pressable style={styles.menuRow} onPress={onPress}>
+      <View style={styles.menuIconWrap}>{item.icon}</View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.menuTitle}>{item.title}</Text>
+        {item.subtitle ? <Text style={styles.menuSubtitle}>{item.subtitle}</Text> : null}
+      </View>
+      <ChevronRightIcon size={20} color="#9ca3af" />
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: 'transparent' },
-  scrollContent: {
-    paddingBottom: 12,
+  safe: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    overflow: 'hidden',
-    gap: 16,
-  },
-  headerTitle: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 32,
-  },
-  identityCard: {
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 252, 252, 0.73)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.62)',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-    gap: 12,
-  },
-  identityRow: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.26)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+  },
+  headerTitle: {
+    color: '#1C1C1E',
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 32,
+  },
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.62)',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    paddingTop: 24,
+    paddingBottom: 24,
+    paddingHorizontal: 24,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#fc4c02',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#363636',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -270,136 +231,100 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#ffffff',
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 28,
+    fontWeight: '700',
   },
-  identityTextWrap: {
+  profileText: {
     flex: 1,
     gap: 4,
   },
   name: {
-    color: '#0f172a',
-    fontSize: 20,
+    color: '#363636',
+    fontSize: 18,
     fontWeight: '700',
-    lineHeight: 28,
+    lineHeight: 26,
   },
-  verifiedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  verifiedText: {
-    color: '#0f172a',
-    fontSize: 13,
-    fontWeight: '500',
+  meta: {
+    color: '#363636',
+    fontSize: 14,
     lineHeight: 20,
   },
-  contactList: {
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-    paddingTop: 12,
-    gap: 8,
-  },
-  contactRow: {
-    flexDirection: 'row',
+  editButton: {
+    width: 40,
+    height: 40,
     alignItems: 'center',
-    gap: 12,
-  },
-  contactText: {
-    color: '#0f172a',
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: '400',
-  },
-  body: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    gap: 16,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  stat: {
-    flex: 1,
-    height: 70,
+    justifyContent: 'center',
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.53)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.62)',
-    paddingTop: 10,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    gap: 2,
   },
-  statValue: {
-    color: '#0f172a',
-    fontSize: 22,
-    fontWeight: '700',
-    lineHeight: 28,
-    textAlign: 'center',
+  scroll: {
+    flex: 1,
   },
-  statValueHighlight: {
-    color: '#fc4c02',
-  },
-  statLabel: {
-    color: '#64748b',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '400',
-    textAlign: 'center',
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 12,
   },
   menuCard: {
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 251, 251, 0.55)',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.62)',
+    borderColor: 'rgba(255, 255, 255, 0.62)',
+    borderRadius: 24,
     paddingVertical: 8,
-    paddingHorizontal: 8,
   },
-  menuItem: {
-    height: 56,
+  menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    borderRadius: 16,
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
+    gap: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
   menuIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(252,76,2,0.15)',
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuLabel: {
-    color: '#0f172a',
+  menuTitle: {
+    color: '#101828',
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 24,
   },
-  logout: {
-    height: 44,
-    borderRadius: 16,
-    borderWidth: 1.162,
-    borderColor: '#ef4444',
-    backgroundColor: '#f8fafc',
+  menuSubtitle: {
+    color: '#6a7282',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  menuDivider: {
+    marginLeft: 72,
+    height: 1,
+    backgroundColor: '#f3f4f6',
+  },
+  logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    height: 51,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    marginTop: 4,
   },
   logoutText: {
     color: '#ef4444',
     fontSize: 14,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: 24,
+  },
+  version: {
+    textAlign: 'center',
+    color: '#6a7282',
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 8,
   },
 });
