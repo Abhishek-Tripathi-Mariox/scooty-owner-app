@@ -282,6 +282,11 @@ export type StationItem = {
   city?: string;
   state?: string;
   location?: PointLocation;
+  maxVehicles?: number | null;
+  occupiedVehicles?: number;
+  availableScooters?: number;
+  remainingCapacity?: number | null;
+  isFull?: boolean;
 };
 
 export type OwnerKyc = {

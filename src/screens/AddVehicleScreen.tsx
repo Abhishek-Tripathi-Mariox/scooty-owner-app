@@ -124,21 +124,49 @@ function StationDropdown({
           ) : (
             stations.map((station) => {
               const isSelected = station._id === selectedId;
+              const isFull = station.isFull === true;
+              const max = Number(station.maxVehicles || 0);
+              const occ = Number(station.occupiedVehicles || 0);
+              const capacityLabel = max > 0 ? `${occ}/${max}` : null;
               return (
                 <Pressable
                   key={station._id}
-                  style={[styles.dropdownOption, isSelected && styles.dropdownOptionActive]}
+                  style={[
+                    styles.dropdownOption,
+                    isSelected && styles.dropdownOptionActive,
+                    isFull && styles.dropdownOptionDisabled,
+                  ]}
+                  disabled={isFull}
                   onPress={() => {
                     onSelect(station._id);
                     setOpen(false);
                   }}
                 >
                   <View style={styles.dropdownOptionTextWrap}>
-                    <Text style={styles.dropdownOptionTitle}>
-                      {station.name || 'Unnamed station'}
-                    </Text>
+                    <View style={styles.dropdownOptionTitleRow}>
+                      <Text
+                        style={[
+                          styles.dropdownOptionTitle,
+                          isFull && styles.dropdownOptionTitleDim,
+                        ]}
+                      >
+                        {station.name || 'Unnamed station'}
+                      </Text>
+                      {isFull ? (
+                        <View style={styles.fullBadge}>
+                          <Text style={styles.fullBadgeText}>FULL</Text>
+                        </View>
+                      ) : capacityLabel ? (
+                        <Text style={styles.capacityLabel}>{capacityLabel}</Text>
+                      ) : null}
+                    </View>
                     {station.address || station.city ? (
-                      <Text style={styles.dropdownOptionMeta}>
+                      <Text
+                        style={[
+                          styles.dropdownOptionMeta,
+                          isFull && styles.dropdownOptionTitleDim,
+                        ]}
+                      >
                         {station.address || station.city}
                       </Text>
                     ) : null}
@@ -581,18 +609,49 @@ const styles = StyleSheet.create({
   dropdownOptionActive: {
     backgroundColor: 'rgba(255,244,239,0.8)',
   },
+  dropdownOptionDisabled: {
+    opacity: 0.5,
+    backgroundColor: 'rgba(241,245,249,0.6)',
+  },
   dropdownOptionTextWrap: { flex: 1, paddingRight: 8 },
+  dropdownOptionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   dropdownOptionTitle: {
     color: '#0f172a',
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
+    flexShrink: 1,
+  },
+  dropdownOptionTitleDim: {
+    color: '#94a3b8',
   },
   dropdownOptionMeta: {
     color: '#64748b',
     fontSize: 12,
     lineHeight: 16,
     marginTop: 2,
+  },
+  capacityLabel: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+  },
+  fullBadge: {
+    backgroundColor: 'rgba(239,68,68,0.12)',
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  fullBadgeText: {
+    color: '#ef4444',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   dropdownEmpty: {
     color: '#64748b',

@@ -84,13 +84,13 @@ export function LoginScreen({
       </View>
 
       <View style={styles.footerBlock}>
-        <Text style={styles.footerHint}>New to MOVYRA?</Text>
+        <Text style={styles.footerHint}>New to Slydo Mobility?</Text>
         <Text style={styles.footerLink} onPress={onRegisterPress}>
           Register as Vehicle Owner
         </Text>
       </View>
 
-      <Text style={styles.copyright}>© 2026 MOVYRA. All rights reserved.</Text>
+      <Text style={styles.copyright}>© 2026 Slydo Mobility. All rights reserved.</Text>
     </ScrollView>
   );
 }

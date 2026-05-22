@@ -25,7 +25,7 @@ export function BrandMark() {
           resizeMode="contain"
         />
       </View>
-      <Text style={styles.title}>MOVYRA</Text>
+      <Text style={styles.title}>Slydo Mobility</Text>
       <Text style={styles.subtitle}>Vehicle Owner Portal</Text>
     </View>
   );

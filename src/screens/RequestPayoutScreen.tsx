@@ -72,6 +72,7 @@ export function RequestPayoutScreen({
   value,
   onChangeValue,
   onSubmit,
+  onChangeBank,
   loading = false,
   onTabPress,
 }: {
@@ -82,6 +83,7 @@ export function RequestPayoutScreen({
   value: string;
   onChangeValue: (value: string) => void;
   onSubmit: () => void;
+  onChangeBank?: () => void;
   loading?: boolean;
   onTabPress: (tab: TabKey) => void;
 }) {
@@ -145,8 +147,10 @@ export function RequestPayoutScreen({
                   <Text style={styles.bankNumber}>{accountMask}</Text>
                   <Text style={styles.bankName}>{bank?.bankName || 'Add bank details'}</Text>
                 </View>
-                <Pressable>
-                  <Text style={styles.change}>Change</Text>
+                <Pressable onPress={onChangeBank} hitSlop={10}>
+                  <Text style={styles.change}>
+                    {bank?.accountNumber || bank?.upiId ? 'Change' : 'Add'}
+                  </Text>
                 </Pressable>
               </View>
             </View>

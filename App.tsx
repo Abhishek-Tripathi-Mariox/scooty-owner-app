@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, KeyboardAvoidingView, Linking, NativeModules, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, AppState, KeyboardAvoidingView, Linking, NativeModules, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput } from 'react-native';
 import DocumentPicker, {
   isCancel as isDocumentPickerCancel,
   types as DocumentPickerTypes,
 } from 'react-native-document-picker';
 import { compressImage, checkFileSizeLimit } from './src/utils/image-compression';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { SplashScreen } from './src/screens/SplashScreen';
 import { OtpScreen } from './src/screens/OtpScreen';
 import { AuthStep, OTP_LENGTH } from './src/constants/auth';
 import { RegisterScreen } from './src/screens/RegisterScreen';
@@ -51,6 +52,7 @@ import {
 import { FONTS } from './src/constants/fonts';
 
 type AppStep =
+  | 'splash'
   | AuthStep
   | 'register'
   | 'kyc'
@@ -220,7 +222,7 @@ const getEarningsRangeQuery = (range: EarningsRange) => {
 };
 
 export default function App() {
-  const [step, setStep] = useState<AppStep>('login');
+  const [step, setStep] = useState<AppStep>('splash');
   const [token, setToken] = useState<string | null>(null);
   const [owner, setOwner] = useState<Owner | null>(null);
   const [bank, setBank] = useState<Bank | null>(null);
@@ -255,13 +257,14 @@ export default function App() {
   const [vehicleFiles, setVehicleFiles] = useState<VehicleUploadFiles>(DEFAULT_VEHICLE_FILES);
   const [profilePhoto, setProfilePhoto] = useState<KycUploadFile | null>(DEFAULT_PROFILE_PHOTO);
   const [showBankEditModal, setShowBankEditModal] = useState(false);
+  const [bankEditReturnStep, setBankEditReturnStep] = useState<AppStep>('profile');
   const bankFormDirtyRef = useRef(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [kycFiles, setKycFiles] = useState<KycUploadFiles>(DEFAULT_KYC_FILES);
   const [kycRequestDocument, setKycRequestDocument] = useState<keyof KycUploadFiles | null>(null);
   const [kycRequestOrigin, setKycRequestOrigin] = useState<'register' | 'documents' | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
-  const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [, setIsBootstrapping] = useState(true);
 
   const normalizedPhone = useMemo(
     () => mobileNumber.replace(/\D/g, '').slice(0, 10),
@@ -490,7 +493,7 @@ export default function App() {
         city,
         state: stateName,
         pincode,
-        companyName: owner?.companyName || 'MOVYRA Fleet',
+        companyName: owner?.companyName || 'Slydo Mobility Fleet',
         profilePhoto: profilePhoto || undefined,
       });
       syncProfileForm(result.owner, result.bank);
@@ -686,12 +689,21 @@ export default function App() {
     let active = true;
 
     const bootstrapAuth = async () => {
+      const splashStart = Date.now();
+      const ensureMinSplash = async () => {
+        const elapsed = Date.now() - splashStart;
+        const remaining = 3800 - elapsed;
+        if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
+      };
+
       try {
         const storedToken =
           Platform.OS === 'android' && OwnerAuthStorage?.getItem
             ? await OwnerAuthStorage.getItem(AUTH_TOKEN_KEY)
             : null;
         if (!storedToken) {
+          await ensureMinSplash();
+          if (active) setStep('login');
           return;
         }
 
@@ -703,19 +715,24 @@ export default function App() {
         if (result.owner?.kycStatus === 'APPROVED') {
           await loadDashboardData(storedToken);
           if (!active) return;
-          setStep('dashboard');
+          await ensureMinSplash();
+          if (active) setStep('dashboard');
           return;
         }
 
         if (result.owner?.kycStatus === 'PENDING' || result.owner?.kycStatus === 'REJECTED') {
-          setStep('pending-approval');
+          await ensureMinSplash();
+          if (active) setStep('pending-approval');
           return;
         }
 
-        setStep('register');
+        await ensureMinSplash();
+        if (active) setStep('register');
       } catch (error) {
         await clearAuthToken();
         console.log('Failed to restore owner session:', error);
+        await ensureMinSplash();
+        if (active) setStep('login');
       } finally {
         if (active) {
           setIsBootstrapping(false);
@@ -784,7 +801,7 @@ export default function App() {
       if (/USER\s+account/i.test(message)) {
         Alert.alert(
           'Use the User app',
-          'This mobile number is registered as a customer. Please install and login with the MOVYRA User app to continue.',
+          'This mobile number is registered as a customer. Please install and login with the Slydo Mobility User app to continue.',
         );
       } else {
         Alert.alert('Unable to send OTP', message);
@@ -806,7 +823,7 @@ export default function App() {
         mobile: normalizedPhone,
         otp,
         name: fullName || undefined,
-        companyName: 'MOVYRA Fleet',
+        companyName: 'Slydo Mobility Fleet',
       });
       setToken(result.token);
       void persistAuthToken(result.token);
@@ -849,7 +866,7 @@ export default function App() {
         address,
         mobile: normalizedPhone,
         city,
-        companyName: owner?.companyName || 'MOVYRA Fleet',
+        companyName: owner?.companyName || 'Slydo Mobility Fleet',
       };
 
       if (!token) {
@@ -876,7 +893,7 @@ export default function App() {
         city,
         state: stateName,
         pincode,
-        companyName: owner?.companyName || 'MOVYRA Fleet',
+        companyName: owner?.companyName || 'Slydo Mobility Fleet',
         profilePhoto: profilePhoto || undefined,
       });
       syncProfileForm(result.owner, result.bank);
@@ -1167,6 +1184,11 @@ export default function App() {
       bankFormDirtyRef.current = false;
       if (step === 'bank-details-onboarding') {
         setStep('pending-approval');
+      } else if (step === 'bank-details-edit' && bankEditReturnStep !== 'profile') {
+        const dest = bankEditReturnStep;
+        setBankEditReturnStep('profile');
+        setShowBankEditModal(false);
+        setStep(dest);
       } else {
         setShowBankEditModal(false);
       }
@@ -1184,6 +1206,8 @@ export default function App() {
 
   const renderScreen = () => {
     switch (step) {
+      case 'splash':
+        return <SplashScreen />;
       case 'login':
         return (
           <LoginScreen
@@ -1353,6 +1377,10 @@ export default function App() {
             value={payoutAmount}
             onChangeValue={setPayoutAmount}
             onSubmit={handleRequestPayout}
+            onChangeBank={() => {
+              setBankEditReturnStep('request-payout');
+              setStep('bank-details-edit');
+            }}
             loading={authBusy}
             onTabPress={handleBottomTabPress}
           />
@@ -1677,7 +1705,11 @@ export default function App() {
       case 'bank-details-edit':
         return (
           <BankDetailsScreen
-            onBack={() => setStep('profile')}
+            onBack={() => {
+              const dest = bankEditReturnStep;
+              setBankEditReturnStep('profile');
+              setStep(dest);
+            }}
           onOpenEdit={() => setShowBankEditModal(false)}
           bank={bank}
           owner={owner}
@@ -1756,14 +1788,7 @@ export default function App() {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {isBootstrapping ? (
-          <View style={styles.bootScreen}>
-            <ActivityIndicator size="small" color="#fc4c02" />
-            <Text style={styles.bootText}>Loading owner dashboard...</Text>
-          </View>
-        ) : (
-          renderScreen()
-        )}
+        {renderScreen()}
       </KeyboardAvoidingView>
       <NoticeModal
         visible={Boolean(notice)}
@@ -1794,17 +1819,5 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-  },
-  bootScreen: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    backgroundColor: '#efe8e4',
-  },
-  bootText: {
-    color: '#0f172a',
-    fontSize: 14,
-    fontWeight: '500',
   },
 });

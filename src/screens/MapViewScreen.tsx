@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Alert,
   Linking,
@@ -11,6 +10,7 @@ import {
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import { GradientButton } from '../components/GradientButton';
+import { LiveMap, type MapPin } from '../components/LiveMap';
 import { ArrowLeftIcon, ArrowRightIcon, PlusIcon } from '../components/OwnerIcons';
 import { StationItem, VehicleItem } from '../services/ownerApi';
 
@@ -39,11 +39,48 @@ export function MapViewScreen({
   const longitude = parseCoordinate(coordinates?.[0]);
   const locationAvailable = latitude !== null && longitude !== null;
 
+  const stationFromList = stations.find((s) => s._id === vehicle?.stationId);
+  const stationLat = parseCoordinate(stationFromList?.location?.coordinates?.[1]);
+  const stationLng = parseCoordinate(stationFromList?.location?.coordinates?.[0]);
+
+  const center =
+    locationAvailable
+      ? { latitude: latitude as number, longitude: longitude as number }
+      : stationLat != null && stationLng != null
+        ? { latitude: stationLat, longitude: stationLng }
+        : null;
+
   const locationName =
     vehicle?.station?.name ||
-    stations.find((station) => station._id === vehicle?.stationId)?.name ||
+    stationFromList?.name ||
     vehicle?.locationLabel ||
     'Unknown location';
+
+  const pins: MapPin[] = [];
+  if (locationAvailable) {
+    pins.push({
+      id: vehicle?._id || 'vehicle',
+      latitude: latitude as number,
+      longitude: longitude as number,
+      title: vehicle?.modelName || vehicle?.registrationNumber || 'Vehicle',
+      subtitle: locationName,
+      variant: 'primary',
+    });
+  }
+  stations.forEach((s) => {
+    const sLat = parseCoordinate(s.location?.coordinates?.[1]);
+    const sLng = parseCoordinate(s.location?.coordinates?.[0]);
+    if (sLat == null || sLng == null) return;
+    if (s._id === vehicle?.stationId && locationAvailable) return;
+    pins.push({
+      id: s._id,
+      latitude: sLat,
+      longitude: sLng,
+      title: s.name,
+      subtitle: s.address,
+      variant: 'secondary',
+    });
+  });
 
   const openInMaps = async () => {
     if (!locationAvailable || latitude == null || longitude == null) {
@@ -71,24 +108,19 @@ export function MapViewScreen({
       <AppBackground variant="auth" />
 
       <View style={styles.mapArea}>
-        <View style={styles.blockA} />
-        <View style={styles.blockB} />
-        <View style={styles.blockC} />
-        <View style={styles.blockD} />
-        <View style={styles.route} />
-        <View style={styles.pinLarge} />
-        <View style={styles.pinSmall1} />
-        <View style={styles.pinSmall2} />
-        <View style={styles.pinSmall3} />
-        <View style={styles.pinSmall4} />
-        <View style={styles.mapLabel}>
-          <Text style={styles.mapLabelTitle}>{vehicle?.modelName || 'Vehicle'}</Text>
+        <LiveMap center={center} pins={pins} style={StyleSheet.absoluteFillObject} />
+        <View style={styles.mapLabel} pointerEvents="none">
+          <Text style={styles.mapLabelTitle}>
+            {vehicle?.modelName || vehicle?.registrationNumber || 'Vehicle'}
+          </Text>
           <Text style={styles.mapLabelSub}>{locationName}</Text>
           {locationAvailable ? (
             <Text style={styles.mapLabelCoords}>
-              {`Lat ${latitude?.toFixed(4)} · Lon ${longitude?.toFixed(4)}`}
+              {`Lat ${(latitude as number).toFixed(4)} · Lon ${(longitude as number).toFixed(4)}`}
             </Text>
-          ) : null}
+          ) : (
+            <Text style={styles.mapLabelCoords}>No live GPS for this vehicle yet</Text>
+          )}
         </View>
       </View>
 
@@ -96,7 +128,7 @@ export function MapViewScreen({
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#101828" />
         </Pressable>
-        <Text style={styles.heading}>Vehicle Details</Text>
+        <Text style={styles.heading}>Vehicle Location</Text>
         {onAddVehicle ? (
           <Pressable style={styles.addButton} onPress={onAddVehicle}>
             <PlusIcon size={16} color="#fc4c02" />
@@ -112,7 +144,7 @@ export function MapViewScreen({
           <Text style={styles.backButtonText}>Back</Text>
         </Pressable>
         <GradientButton
-          label="Request to Stop"
+          label="Open in Maps"
           onPress={openInMaps}
           height={48}
           radius={12}
@@ -179,107 +211,15 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
-  blockA: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: '35%',
-    height: '26%',
-    backgroundColor: '#efe5c5',
-    opacity: 0.9,
-  },
-  blockB: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    width: '34%',
-    height: '30%',
-    backgroundColor: '#c7d6e6',
-    opacity: 0.9,
-  },
-  blockC: {
-    position: 'absolute',
-    left: '28%',
-    top: '30%',
-    width: '42%',
-    height: '35%',
-    backgroundColor: '#e9e3c1',
-    opacity: 0.9,
-  },
-  blockD: {
-    position: 'absolute',
-    right: '8%',
-    bottom: '10%',
-    width: '30%',
-    height: '24%',
-    backgroundColor: '#cfe2c7',
-    opacity: 0.9,
-  },
-  route: {
-    position: 'absolute',
-    left: '10%',
-    top: '45%',
-    right: '10%',
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: '#fc4c02',
-  },
-  pinLarge: {
-    position: 'absolute',
-    left: '45%',
-    top: '48%',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#fc4c02',
-    borderWidth: 4,
-    borderColor: '#fff',
-  },
-  pinSmall1: {
-    position: 'absolute',
-    left: '20%',
-    top: '22%',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#84cc16',
-  },
-  pinSmall2: {
-    position: 'absolute',
-    right: '18%',
-    top: '22%',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#f59e0b',
-  },
-  pinSmall3: {
-    position: 'absolute',
-    left: '14%',
-    bottom: '18%',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#f59e0b',
-  },
-  pinSmall4: {
-    position: 'absolute',
-    right: '12%',
-    bottom: '18%',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#84cc16',
-  },
   mapLabel: {
     position: 'absolute',
     left: 16,
     right: 16,
-    top: 80,
+    top: 72,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.88)',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.75)',
   },

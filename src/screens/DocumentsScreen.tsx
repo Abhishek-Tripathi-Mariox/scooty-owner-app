@@ -143,7 +143,7 @@ export function DocumentsScreen({
         <View style={styles.noticeCard}>
           <InfoIcon size={20} color="#fc4c02" />
           <Text style={styles.noticeText}>
-            Your documents are verified by the Movyra admin team. You can request a change if any document is outdated or incorrect.
+            Your documents are verified by the Slydo Mobility admin team. You can request a change if any document is outdated or incorrect.
           </Text>
         </View>
 
