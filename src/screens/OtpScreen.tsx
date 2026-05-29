@@ -11,7 +11,9 @@ import {
 import { AppBackground } from '../components/AppBackground';
 import { GradientButton } from '../components/GradientButton';
 import { OtpBoxes } from '../components/OtpBoxes';
+import { ArrowLeftIcon, ArrowRightIcon } from './../components/OwnerIcons';
 import { DEFAULT_PHONE_NUMBER, OTP_LENGTH, RESEND_SECONDS } from '../constants/auth';
+import { FONTS } from '../constants/fonts';
 import { COLORS } from '../constants/theme';
 import { useResponsiveLayout } from '../utils/responsive';
 import { useStyles } from '../utils/responsiveStyles';
@@ -84,7 +86,7 @@ export function OtpScreen({
         showsVerticalScrollIndicator={false}
       >
         <Pressable onPress={onBack} style={styles.backButton} hitSlop={10}>
-          <Text style={styles.backButtonText}>←</Text>
+          <ArrowLeftIcon size={24} color={COLORS.textPrimary} />
         </Pressable>
 
         <View style={styles.header}>
@@ -124,12 +126,13 @@ export function OtpScreen({
           </Text>
 
           <GradientButton
-            label={loading ? 'Verifying...' : 'Verify & Continue  →'}
+            label={loading ? 'Verifying...' : 'Verify & Continue'}
             onPress={onVerify}
             disabled={!canVerify}
             height={layout.buttonHeight}
             radius={14}
             style={styles.button}
+            rightIcon={loading ? undefined : <ArrowRightIcon size={18} color="#ffffff" />}
           />
         </Pressable>
 
@@ -161,11 +164,6 @@ const RAW_STYLES = {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
-  },
-  backButtonText: {
-    fontSize: 24,
-    lineHeight: 24,
-    color: COLORS.textPrimary,
   },
   header: {
     width: '100%',
@@ -226,9 +224,12 @@ const RAW_STYLES = {
   },
   changeNumberLink: {
     color: COLORS.textPrimary,
+    fontFamily: FONTS.medium,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 24,
+    letterSpacing: 0,
+    textAlign: 'center',
   },
   hiddenInput: {
     position: 'absolute',

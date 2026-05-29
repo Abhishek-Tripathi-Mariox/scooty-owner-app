@@ -90,7 +90,7 @@ export function NotificationsScreen({
       </View>
 
       <View style={styles.tabsShell}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsRow}>
+        <View style={styles.tabsRow}>
           {FILTERS.map((tab) => {
             const isActive = tab.key === selectedFilter;
             return (
@@ -99,11 +99,16 @@ export function NotificationsScreen({
                 onPress={() => setSelectedFilter(tab.key)}
                 style={[styles.tab, isActive && styles.tabActive]}
               >
-                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.label}</Text>
+                <Text
+                  style={[styles.tabText, isActive && styles.tabTextActive]}
+                  numberOfLines={1}
+                >
+                  {tab.label}
+                </Text>
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
@@ -167,16 +172,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   tabsRow: {
+    flexDirection: 'row',
     gap: 4,
     backgroundColor: 'rgba(255,255,255,0.33)',
     borderRadius: 12,
     padding: 3,
   },
   tab: {
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    flex: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
     borderRadius: 16,
-    minWidth: 64,
     alignItems: 'center',
     justifyContent: 'center',
   },

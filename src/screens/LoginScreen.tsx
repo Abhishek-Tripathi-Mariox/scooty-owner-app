@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { BrandMark } from '../components/BrandMark';
 import { GradientButton } from '../components/GradientButton';
+import { ArrowRightIcon } from '../components/OwnerIcons';
 import { PhoneIcon } from '../components/PhoneIcon';
 import { COLORS } from '../constants/theme';
 import { scaleSize, useResponsiveLayout } from '../utils/responsive';
@@ -74,12 +75,13 @@ export function LoginScreen({
         </Pressable>
 
         <GradientButton
-          label={loading ? 'Sending OTP...' : 'Send OTP  →'}
+          label={loading ? 'Sending OTP...' : 'Send OTP'}
           onPress={onContinue}
           disabled={!canSubmit}
           height={layout.buttonHeight}
           radius={12}
           style={styles.sendButton}
+          rightIcon={loading ? undefined : <ArrowRightIcon size={18} color="#ffffff" />}
         />
       </View>
 

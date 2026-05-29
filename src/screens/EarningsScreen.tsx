@@ -19,6 +19,7 @@ import {
   DownloadIcon,
   RupeeIcon,
   TrendUpIcon,
+  TrendDownIcon,
 } from '../components/OwnerIcons';
 import { COLORS } from '../constants/theme';
 import { EarningsResponse } from '../services/ownerApi';
@@ -288,7 +289,7 @@ export function EarningsScreen({
           </View>
           <View style={styles.metricCard}>
             <View style={styles.metricHeader}>
-              <TrendUpIcon size={16} color="#ef4444" />
+              <TrendDownIcon size={16} color="#ef4444" />
               <Text style={styles.metricLabel}>Deductions</Text>
             </View>
             <Text style={[styles.metricValue, styles.metricNegative]}>

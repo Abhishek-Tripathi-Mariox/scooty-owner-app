@@ -1,7 +1,5 @@
-import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORS } from '../constants/theme';
-import EarningImage from '../assets/images/bottom/earningimage.svg';
+import Svg, { Path } from 'react-native-svg';
 
 const HomeImage = require('../assets/images/bottom/homeimage.png');
 const ScootyImage = require('../assets/images/bottom/scootyimage.png');
@@ -9,6 +7,10 @@ const AlertImage = require('../assets/images/bottom/alertimage.png');
 const ProfileImage = require('../assets/images/bottom/profileimage.png');
 
 export type TabKey = 'home' | 'scooty' | 'earnings' | 'alerts' | 'profile';
+
+const ACTIVE_COLOR = '#fc4c02';
+const INACTIVE_COLOR = '#94a3b8';
+const INACTIVE_LABEL = '#6b7280';
 
 export function BottomTabs({
   active,
@@ -19,19 +21,81 @@ export function BottomTabs({
 }) {
   return (
     <View style={styles.bar}>
-      {tabs.map((tab) => (
-        <Pressable key={tab.key} style={styles.tab} onPress={() => onTabPress(tab.key)}>
-          <View style={[styles.iconWrap, active === tab.key && styles.iconWrapActive]}>
-            {tab.key === 'earnings' ? (
-              <EarningImage width={20} height={20} />
-            ) : (
-              <Image source={tab.image} style={styles.iconImage} resizeMode="contain" />
-            )}
-          </View>
-          <Text style={[styles.label, active === tab.key && styles.active]}>{tab.label}</Text>
-        </Pressable>
-      ))}
+      {tabs.map((tab) => {
+        const isActive = active === tab.key;
+        const color = isActive ? ACTIVE_COLOR : INACTIVE_COLOR;
+        return (
+          <Pressable
+            key={tab.key}
+            style={styles.tab}
+            onPress={() => onTabPress(tab.key)}
+            hitSlop={6}
+          >
+            <View
+              style={[
+                styles.iconWrap,
+                isActive && styles.iconWrapActive,
+              ]}
+            >
+              {tab.key === 'earnings' ? (
+                <EarningsIcon size={22} color={color} />
+              ) : (
+                <Image
+                  source={tab.image}
+                  style={[styles.iconImage, { tintColor: color }]}
+                  resizeMode="contain"
+                />
+              )}
+            </View>
+            <Text
+              style={[
+                styles.label,
+                { color: isActive ? ACTIVE_COLOR : INACTIVE_LABEL },
+              ]}
+            >
+              {tab.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
+  );
+}
+
+function EarningsIcon({ size = 22, color = '#94a3b8' }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M5.118 7.404h4.528M5.118 9.523h4.528M8.485 14.652 5.65 12.214v-.571h.16a2.119 2.119 0 0 0 0-4.239h-.69"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeMiterlimit={10}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M12.775 16.319H6.92v2.431h5.855zM18.631 16.319h-5.856v2.431h5.856zM18.631 13.888h-5.856v2.431h5.856z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeMiterlimit={10}
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M6.92 18.75H.75v-5.061c0-2.069.63-4.088 1.807-5.79l1.902-2.75h5.825l1.902 2.75c1.177 1.702 1.807 3.72 1.807 5.79v.388"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeMiterlimit={10}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M11.631.75H3.112v.338c0 .989.241 1.963.702 2.838l.645 1.224h5.825l.645-1.224c.461-.875.702-1.85.702-2.838L11.631.75Z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeMiterlimit={10}
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 
@@ -48,37 +112,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    height: 64,
+    height: 68,
+    paddingTop: 6,
+    paddingBottom: 8,
     borderTopWidth: 1,
     borderTopColor: '#ece3de',
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: -2 },
+    elevation: 8,
   },
   tab: {
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 52,
+    paddingVertical: 4,
   },
   iconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 2,
   },
   iconWrapActive: {
-    backgroundColor: 'rgba(245, 133, 87, 0.12)',
+    backgroundColor: 'rgba(252, 76, 2, 0.12)',
   },
   iconImage: {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
   },
   label: {
-    marginTop: 3,
     fontSize: 11,
-    color: '#7b8191',
-    fontWeight: '700',
-  },
-  active: {
-    color: COLORS.button,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
 });

@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, KeyboardAvoidingView, Linking, NativeModules, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput } from 'react-native';
+import {
+  launchCamera,
+  launchImageLibrary,
+  type Asset,
+  type CameraOptions,
+  type ImageLibraryOptions,
+} from 'react-native-image-picker';
 import DocumentPicker, {
   isCancel as isDocumentPickerCancel,
   types as DocumentPickerTypes,
@@ -368,8 +375,13 @@ export default function App() {
   };
 
   const validateProfileForm = () => {
-    if (!fullName.trim()) {
+    const trimmedName = fullName.trim();
+    if (!trimmedName) {
       Alert.alert('Enter your full name');
+      return false;
+    }
+    if (trimmedName.length < 2) {
+      Alert.alert('Name must be at least 2 characters');
       return false;
     }
     if (!email.trim() || !isValidEmail(email)) {
@@ -509,6 +521,114 @@ export default function App() {
       Alert.alert('Could not save profile', ownerApiErrorMessage(error));
     } finally {
       setAuthBusy(false);
+    }
+  };
+
+  const pickVehiclePhoto = (
+    field: 'frontPhoto' | 'sidePhoto',
+    fallbackName: string,
+  ) => {
+    Alert.alert(
+      'Add Vehicle Photo',
+      'Choose how to add the photo',
+      [
+        {
+          text: 'Take Photo',
+          onPress: () => void pickVehicleImageFromCamera(field, fallbackName),
+        },
+        {
+          text: 'Choose from Gallery',
+          onPress: () => void pickVehicleImageFromGallery(field, fallbackName),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true },
+    );
+  };
+
+  const handleVehicleAsset = async (
+    asset: Asset,
+    field: keyof VehicleUploadFiles,
+    fallbackName: string,
+  ) => {
+    if (!asset.uri) {
+      Alert.alert('Could not load image', 'The picked image is unavailable.');
+      return;
+    }
+    let file: KycUploadFile = {
+      uri: asset.uri,
+      name: asset.fileName || fallbackName,
+      type: asset.type || 'image/jpeg',
+      size: typeof asset.fileSize === 'number' ? asset.fileSize : null,
+    };
+    try {
+      const compressed = await compressImage(file.uri, file.name, 'photo');
+      file = { ...file, uri: compressed.uri, size: compressed.size };
+    } catch (err) {
+      console.warn(`[pickVehiclePhoto] Compression failed for ${field}:`, err);
+    }
+    const sizeCheck = checkFileSizeLimit(file.size || 0, file.name);
+    if (!sizeCheck.ok) {
+      Alert.alert('File too large', sizeCheck.message);
+      return;
+    }
+    setVehicleFiles((current) => ({ ...current, [field]: file }));
+  };
+
+  const pickVehicleImageFromCamera = async (
+    field: 'frontPhoto' | 'sidePhoto',
+    fallbackName: string,
+  ) => {
+    const options: CameraOptions = {
+      mediaType: 'photo',
+      cameraType: 'back',
+      saveToPhotos: false,
+      quality: 0.8,
+      includeBase64: false,
+    };
+    try {
+      const result = await launchCamera(options);
+      if (result.didCancel) return;
+      if (result.errorCode) {
+        Alert.alert(
+          'Camera unavailable',
+          result.errorMessage || 'Please grant camera permission and try again.',
+        );
+        return;
+      }
+      const asset = result.assets?.[0];
+      if (!asset) return;
+      await handleVehicleAsset(asset, field, fallbackName);
+    } catch (error) {
+      Alert.alert('Could not capture photo', ownerApiErrorMessage(error));
+    }
+  };
+
+  const pickVehicleImageFromGallery = async (
+    field: 'frontPhoto' | 'sidePhoto',
+    fallbackName: string,
+  ) => {
+    const options: ImageLibraryOptions = {
+      mediaType: 'photo',
+      quality: 0.8,
+      selectionLimit: 1,
+      includeBase64: false,
+    };
+    try {
+      const result = await launchImageLibrary(options);
+      if (result.didCancel) return;
+      if (result.errorCode) {
+        Alert.alert(
+          'Gallery unavailable',
+          result.errorMessage || 'Please grant photo library permission and try again.',
+        );
+        return;
+      }
+      const asset = result.assets?.[0];
+      if (!asset) return;
+      await handleVehicleAsset(asset, field, fallbackName);
+    } catch (error) {
+      Alert.alert('Could not load photo', ownerApiErrorMessage(error));
     }
   };
 
@@ -692,7 +812,7 @@ export default function App() {
       const splashStart = Date.now();
       const ensureMinSplash = async () => {
         const elapsed = Date.now() - splashStart;
-        const remaining = 3800 - elapsed;
+        const remaining = 5200 - elapsed;
         if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
       };
 
@@ -861,9 +981,10 @@ export default function App() {
 
     setAuthBusy(true);
     try {
+      const resolvedAddress = (address && address.trim()) || city.trim();
       const ownerPayload = {
         fullName,
-        address,
+        address: resolvedAddress,
         mobile: normalizedPhone,
         city,
         companyName: owner?.companyName || 'Slydo Mobility Fleet',
@@ -1027,7 +1148,36 @@ export default function App() {
     if (!token) return;
     const amount = Number(payoutAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      Alert.alert('Enter a valid amount');
+      Alert.alert('Enter a valid amount', 'Please enter the amount you want to withdraw.');
+      return;
+    }
+    if (amount < 100) {
+      Alert.alert('Minimum payout', 'Minimum payout amount is ₹100.');
+      return;
+    }
+    const balance = Number(dashboard?.walletBalance ?? owner?.walletBalance ?? 0);
+    if (amount > balance) {
+      Alert.alert(
+        'Insufficient balance',
+        `Available balance is ${balance.toFixed(2)}. Enter an amount within your wallet balance.`,
+      );
+      return;
+    }
+    if (!bank || (!bank.accountNumber && !bank.upiId)) {
+      Alert.alert(
+        'Add bank details',
+        'Please add your bank account or UPI before requesting a payout.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Add Bank',
+            onPress: () => {
+              setBankEditReturnStep('request-payout');
+              setStep('bank-details-edit');
+            },
+          },
+        ],
+      );
       return;
     }
 
@@ -1412,18 +1562,10 @@ export default function App() {
             rcDocument={vehicleFiles.rcDocument}
             insuranceDocument={vehicleFiles.insuranceDocument}
             onPickFrontPhoto={() =>
-              void setVehicleFile('frontPhoto', {
-                type: [DocumentPickerTypes.images],
-                fallbackName: 'front-photo.jpg',
-                fallbackType: 'image/jpeg',
-              })
+              pickVehiclePhoto('frontPhoto', 'front-photo.jpg')
             }
             onPickSidePhoto={() =>
-              void setVehicleFile('sidePhoto', {
-                type: [DocumentPickerTypes.images],
-                fallbackName: 'side-photo.jpg',
-                fallbackType: 'image/jpeg',
-              })
+              pickVehiclePhoto('sidePhoto', 'side-photo.jpg')
             }
             onPickRcDocument={() =>
               void setVehicleFile('rcDocument', {
@@ -1458,18 +1600,10 @@ export default function App() {
             rcDocument={vehicleFiles.rcDocument}
             insuranceDocument={vehicleFiles.insuranceDocument}
             onPickFrontPhoto={() =>
-              void setVehicleFile('frontPhoto', {
-                type: [DocumentPickerTypes.images],
-                fallbackName: 'front-photo.jpg',
-                fallbackType: 'image/jpeg',
-              })
+              pickVehiclePhoto('frontPhoto', 'front-photo.jpg')
             }
             onPickSidePhoto={() =>
-              void setVehicleFile('sidePhoto', {
-                type: [DocumentPickerTypes.images],
-                fallbackName: 'side-photo.jpg',
-                fallbackType: 'image/jpeg',
-              })
+              pickVehiclePhoto('sidePhoto', 'side-photo.jpg')
             }
             onPickRcDocument={() =>
               void setVehicleFile('rcDocument', {
@@ -1504,18 +1638,10 @@ export default function App() {
             rcDocument={vehicleFiles.rcDocument}
             insuranceDocument={vehicleFiles.insuranceDocument}
             onPickFrontPhoto={() =>
-              void setVehicleFile('frontPhoto', {
-                type: [DocumentPickerTypes.images],
-                fallbackName: 'front-photo.jpg',
-                fallbackType: 'image/jpeg',
-              })
+              pickVehiclePhoto('frontPhoto', 'front-photo.jpg')
             }
             onPickSidePhoto={() =>
-              void setVehicleFile('sidePhoto', {
-                type: [DocumentPickerTypes.images],
-                fallbackName: 'side-photo.jpg',
-                fallbackType: 'image/jpeg',
-              })
+              pickVehiclePhoto('sidePhoto', 'side-photo.jpg')
             }
             onPickRcDocument={() =>
               void setVehicleFile('rcDocument', {
@@ -1550,18 +1676,10 @@ export default function App() {
             rcDocument={vehicleFiles.rcDocument}
             insuranceDocument={vehicleFiles.insuranceDocument}
             onPickFrontPhoto={() =>
-              void setVehicleFile('frontPhoto', {
-                type: [DocumentPickerTypes.images],
-                fallbackName: 'front-photo.jpg',
-                fallbackType: 'image/jpeg',
-              })
+              pickVehiclePhoto('frontPhoto', 'front-photo.jpg')
             }
             onPickSidePhoto={() =>
-              void setVehicleFile('sidePhoto', {
-                type: [DocumentPickerTypes.images],
-                fallbackName: 'side-photo.jpg',
-                fallbackType: 'image/jpeg',
-              })
+              pickVehiclePhoto('sidePhoto', 'side-photo.jpg')
             }
             onPickRcDocument={() =>
               void setVehicleFile('rcDocument', {
