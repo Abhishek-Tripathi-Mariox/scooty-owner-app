@@ -822,8 +822,7 @@ export default function App() {
             ? await OwnerAuthStorage.getItem(AUTH_TOKEN_KEY)
             : null;
         if (!storedToken) {
-          await ensureMinSplash();
-          if (active) setStep('login');
+          // Unauthenticated — stay on splash until user taps "Swipe to get started"
           return;
         }
 
@@ -1357,7 +1356,7 @@ export default function App() {
   const renderScreen = () => {
     switch (step) {
       case 'splash':
-        return <SplashScreen />;
+        return <SplashScreen onGetStarted={() => setStep('login')} />;
       case 'login':
         return (
           <LoginScreen
