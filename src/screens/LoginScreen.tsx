@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { BrandMark } from '../components/BrandMark';
 import { GradientButton } from '../components/GradientButton';
@@ -34,15 +34,16 @@ export function LoginScreen({
   const iconSize = scaleSize(20, layout.screenWidth);
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.screen}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-      automaticallyAdjustKeyboardInsets
-      showsVerticalScrollIndicator={false}
-    >
+    <SafeAreaView style={styles.safe}>
       <AppBackground variant="auth" />
-
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.screen}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.brandBlock}>
         <BrandMark />
       </View>
@@ -92,12 +93,15 @@ export function LoginScreen({
         </Text>
       </View>
 
-      <Text style={styles.copyright}>© 2026 Slydo Mobility. All rights reserved.</Text>
-    </ScrollView>
+        <Text style={styles.copyright}>© 2026 Slydo Mobility. All rights reserved.</Text>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const RAW_STYLES = {
+  safe: { flex: 1, backgroundColor: 'transparent' },
+  flex: { flex: 1 },
   screen: {
     flexGrow: 1,
     alignItems: 'center',
