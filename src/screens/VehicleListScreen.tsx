@@ -20,7 +20,7 @@ import {
   StarIcon,
 } from '../components/OwnerIcons';
 import { StationItem, VehicleItem } from '../services/ownerApi';
-import { formatCurrency } from '../utils/format';
+import { formatCompactCurrency } from '../utils/format';
 
 type VehicleFilter = 'ALL' | 'ACTIVE' | 'IN_RIDE' | 'CHARGING' | 'MAINTENANCE';
 
@@ -39,6 +39,9 @@ const STATUS_LABELS: Record<string, string> = {
   MAINTENANCE: 'Maintenance',
   DRAFT: 'Draft',
   PENDING: 'Pending',
+  PENDING_APPROVAL: 'Pending Approval',
+  INACTIVE: 'Inactive',
+  REMOVAL_REQUESTED: 'Removal Requested',
 };
 
 export function VehicleListScreen({
@@ -183,7 +186,7 @@ export function VehicleListScreen({
                     <VehicleStat
                       icon={<RupeeIcon size={16} color="#64748b" />}
                       label="Earnings"
-                      value={formatCurrency(vehicle.earnings || 0)}
+                      value={formatCompactCurrency(vehicle.earnings || 0)}
                     />
                     <VehicleStat
                       icon={<StarIcon size={16} color="#0f172a" />}
@@ -241,7 +244,8 @@ function VehicleStat({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 56,
+    height: 96,
+    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,

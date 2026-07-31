@@ -18,6 +18,8 @@ export function MapViewScreen({
   onBack,
   onTabPress,
   onAddVehicle,
+  onRequestStop,
+  requestStopBusy = false,
   vehicle,
   stations = [],
 }: {
@@ -25,6 +27,8 @@ export function MapViewScreen({
   onGoHome: () => void;
   onTabPress: (tab: TabKey) => void;
   onAddVehicle?: () => void;
+  onRequestStop?: () => void;
+  requestStopBusy?: boolean;
   vehicle?: VehicleItem | null;
   stations?: StationItem[];
 }) {
@@ -107,28 +111,11 @@ export function MapViewScreen({
     <View style={styles.root}>
       <AppBackground variant="auth" />
 
-      <View style={styles.mapArea}>
-        <LiveMap center={center} pins={pins} style={StyleSheet.absoluteFillObject} />
-        <View style={styles.mapLabel} pointerEvents="none">
-          <Text style={styles.mapLabelTitle}>
-            {vehicle?.modelName || vehicle?.registrationNumber || 'Vehicle'}
-          </Text>
-          <Text style={styles.mapLabelSub}>{locationName}</Text>
-          {locationAvailable ? (
-            <Text style={styles.mapLabelCoords}>
-              {`Lat ${(latitude as number).toFixed(4)} · Lon ${(longitude as number).toFixed(4)}`}
-            </Text>
-          ) : (
-            <Text style={styles.mapLabelCoords}>No live GPS for this vehicle yet</Text>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.topbar} pointerEvents="box-none">
+      <View style={styles.topbar}>
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#101828" />
         </Pressable>
-        <Text style={styles.heading}>Vehicle Location</Text>
+        <Text style={styles.heading}>Vehicle Details</Text>
         {onAddVehicle ? (
           <Pressable style={styles.addButton} onPress={onAddVehicle}>
             <PlusIcon size={16} color="#fc4c02" />
@@ -139,18 +126,23 @@ export function MapViewScreen({
         )}
       </View>
 
-      <View style={styles.actions}>
-        <Pressable style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>Back</Text>
-        </Pressable>
-        <GradientButton
-          label="Open in Maps"
-          onPress={openInMaps}
-          height={48}
-          radius={12}
-          rightIcon={<ArrowRightIcon size={16} color="#ffffff" />}
-          style={styles.primaryButton}
-        />
+      <View style={styles.mapArea}>
+        <LiveMap center={center} pins={pins} style={StyleSheet.absoluteFillObject} />
+
+        <View style={styles.actions}>
+          <Pressable style={styles.backButton} onPress={onBack}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </Pressable>
+          <GradientButton
+            label={requestStopBusy ? 'Sending...' : 'Request to Stop'}
+            onPress={onRequestStop || openInMaps}
+            disabled={requestStopBusy}
+            height={48}
+            radius={24}
+            rightIcon={<ArrowRightIcon size={16} color="#ffffff" />}
+            style={styles.primaryButton}
+          />
+        </View>
       </View>
 
       <BottomTabs active="scooty" onTabPress={onTabPress} />
@@ -161,15 +153,12 @@ export function MapViewScreen({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 56,
+    height: 96,
+    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.26)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     gap: 12,
   },
   back: {
@@ -211,53 +200,23 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
-  mapLabel: {
+  actions: {
     position: 'absolute',
     left: 16,
     right: 16,
-    top: 72,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.75)',
-  },
-  mapLabelTitle: {
-    color: '#0f172a',
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  mapLabelSub: {
-    marginTop: 2,
-    color: '#64748b',
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  mapLabelCoords: {
-    marginTop: 4,
-    color: '#94a3b8',
-    fontSize: 11,
-    lineHeight: 14,
-  },
-  actions: {
+    bottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
     gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.6)',
   },
   backButton: {
     flex: 1,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: '#fc4c02',
-    backgroundColor: 'rgba(253,254,249,0.67)',
+    backgroundColor: 'rgba(255,255,255,0.95)',
     alignItems: 'center',
     justifyContent: 'center',
   },

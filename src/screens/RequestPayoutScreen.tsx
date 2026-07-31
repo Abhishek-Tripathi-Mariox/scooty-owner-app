@@ -12,7 +12,6 @@ import {
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
-import { PrimaryButton } from '../components/PrimaryButton';
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -48,7 +47,7 @@ function HistoryItem({
   const isProcessing = status.toLowerCase() === 'processing';
   return (
     <View style={styles.historyItem}>
-      <View style={styles.historyIconWrap}>
+      <View style={[styles.historyIconWrap, isProcessing && styles.historyIconWrapProcessing]}>
         {isProcessing ? (
           <ClockIcon size={20} color="#64748b" />
         ) : (
@@ -167,12 +166,15 @@ export function RequestPayoutScreen({
               ))}
             </View>
 
-            <PrimaryButton
-              label={loading ? 'Submitting...' : 'Request Payout'}
+            <Pressable
+              style={[styles.requestButton, loading && styles.requestButtonDisabled]}
               onPress={onSubmit}
               disabled={loading}
-              style={styles.requestButton}
-            />
+            >
+              <Text style={styles.requestButtonText}>
+                {loading ? 'Submitting...' : 'Request Payout'}
+              </Text>
+            </Pressable>
           </View>
 
           <Text style={styles.sectionTitle}>Payout History</Text>
@@ -207,7 +209,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
   topbar: {
-    height: 56,
+    height: 96,
+    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -235,7 +238,7 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   balanceCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     height: 116,
     paddingHorizontal: 24,
     paddingTop: 24,
@@ -348,8 +351,9 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 46,
     borderRadius: 16,
-    borderWidth: 1.162,
+    borderWidth: 1,
     borderColor: '#e2e8f0',
+    backgroundColor: 'rgba(255,255,255,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -361,6 +365,19 @@ const styles = StyleSheet.create({
   },
   requestButton: {
     height: 48,
+    borderRadius: 24,
+    backgroundColor: '#22c55e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  requestButtonDisabled: {
+    opacity: 0.6,
+  },
+  requestButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 24,
   },
   sectionTitle: {
     color: '#0f172a',
@@ -383,9 +400,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(34,197,94,0.1)',
+    backgroundColor: 'rgba(34,197,94,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  historyIconWrapProcessing: {
+    backgroundColor: 'rgba(100,116,139,0.12)',
   },
   historyBody: { flex: 1 },
   historyAmount: {

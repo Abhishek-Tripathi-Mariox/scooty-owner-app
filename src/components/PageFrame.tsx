@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { AppBackground } from './AppBackground';
+import { ArrowLeftIcon } from './OwnerIcons';
 import { COLORS, SPACING } from '../constants/theme';
 
 export function PageFrame({
@@ -92,8 +93,8 @@ function FrameChrome({
       </View>
       <View style={styles.headerRow}>
         {onBack ? (
-          <Pressable onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backText}>←</Text>
+          <Pressable onPress={onBack} style={styles.backButton} hitSlop={10}>
+            <ArrowLeftIcon size={26} color="#171717" />
           </Pressable>
         ) : (
           <View style={styles.backPlaceholder} />
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: 32,
   },
   searchLabelRow: {
     paddingHorizontal: SPACING.screenX,
@@ -141,13 +142,8 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 12,
     marginTop: 1,
-  },
-  backText: {
-    fontSize: 24,
-    color: COLORS.textPrimary,
-    marginTop: -2,
   },
   backPlaceholder: {
     width: 28,

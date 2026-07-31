@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppState, KeyboardAvoidingView, Linking, NativeModules, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput } from 'react-native';
+import { Alert, AppState, KeyboardAvoidingView, Linking, NativeModules, PermissionsAndroid, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput } from 'react-native';
 import {
   launchCamera,
   launchImageLibrary,
@@ -35,6 +35,7 @@ import { DocumentsScreen } from './src/screens/DocumentsScreen';
 import { BankDetailsScreen } from './src/screens/BankDetailsScreen';
 import { MapViewScreen } from './src/screens/MapViewScreen';
 import { NoticeModal } from './src/components/NoticeModal';
+import { PhotoSourceSheet } from './src/components/PhotoSourceSheet';
 import type { TabKey } from './src/components/BottomTabs';
 import {
   Bank,
@@ -45,6 +46,7 @@ import {
   OwnerSettings,
   PayoutItem,
   StationItem,
+  SupportContact,
   SupportFaq,
   SupportTicket,
   VehicleItem,
@@ -193,9 +195,12 @@ const createUploadFile = (
   };
 };
 
-const resolveKycStep = (kycStatus?: string): AppStep => {
+const resolveKycStep = (owner?: Owner | null): AppStep => {
+  const kycStatus = owner?.kycStatus;
   if (kycStatus === 'APPROVED') return 'dashboard';
   if (kycStatus === 'PENDING' || kycStatus === 'REJECTED') return 'pending-approval';
+  // Registration details already submitted — resume at KYC instead of the register form
+  if (owner?.name?.trim() && owner?.city?.trim()) return 'kyc';
   return 'register';
 };
 
@@ -242,6 +247,7 @@ export default function App() {
   const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
   const [vehicleDetail, setVehicleDetail] = useState<VehicleItem | null>(null);
   const [faqs, setFaqs] = useState<SupportFaq[]>([]);
+  const [supportContact, setSupportContact] = useState<SupportContact | null>(null);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [settings, setSettings] = useState<OwnerSettings>(DEFAULT_SETTINGS);
   const [stations, setStations] = useState<StationItem[]>([]);
@@ -250,6 +256,7 @@ export default function App() {
   const [otp, setOtp] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [registerAcceptedTerms, setRegisterAcceptedTerms] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
@@ -262,6 +269,11 @@ export default function App() {
   const [bankForm, setBankForm] = useState(DEFAULT_BANK_FORM);
   const [vehicleForm, setVehicleForm] = useState(DEFAULT_VEHICLE_FORM);
   const [vehicleFiles, setVehicleFiles] = useState<VehicleUploadFiles>(DEFAULT_VEHICLE_FILES);
+  const [vehiclePhotoField, setVehiclePhotoField] = useState<'frontPhoto' | 'sidePhoto' | null>(null);
+  const [maintenanceToggleBusy, setMaintenanceToggleBusy] = useState(false);
+  const [showRemoveSuccess, setShowRemoveSuccess] = useState(false);
+  const [showBankUpdateSuccess, setShowBankUpdateSuccess] = useState(false);
+  const [requestStopBusy, setRequestStopBusy] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<KycUploadFile | null>(DEFAULT_PROFILE_PHOTO);
   const [showBankEditModal, setShowBankEditModal] = useState(false);
   const [bankEditReturnStep, setBankEditReturnStep] = useState<AppStep>('profile');
@@ -319,6 +331,9 @@ export default function App() {
     setBank(profileBank);
     setFullName(profile?.name || '');
     setEmail(profile?.email || '');
+    if (profile?.mobile) {
+      setMobileNumber(profile.mobile.replace(/\D/g, '').slice(-10));
+    }
     setAddress(profile?.address || profile?.adress || '');
     setCity(profile?.city || '');
     setStateName(profile?.state || '');
@@ -367,7 +382,7 @@ export default function App() {
       Alert.alert('Enter a valid mobile number');
       return false;
     }
-    if (!acceptedTerms) {
+    if (!registerAcceptedTerms) {
       Alert.alert('Please accept the terms and privacy policy');
       return false;
     }
@@ -526,24 +541,34 @@ export default function App() {
 
   const pickVehiclePhoto = (
     field: 'frontPhoto' | 'sidePhoto',
-    fallbackName: string,
+    _fallbackName: string,
   ) => {
+    setVehiclePhotoField(field);
+  };
+
+  const vehiclePhotoFallbackName = (field: 'frontPhoto' | 'sidePhoto') =>
+    field === 'frontPhoto' ? 'front-photo.jpg' : 'side-photo.jpg';
+
+  const ensureCameraPermission = async () => {
+    if (Platform.OS !== 'android') return true;
+    const alreadyGranted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.CAMERA);
+    if (alreadyGranted) return true;
+    const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA, {
+      title: 'Camera Permission',
+      message: 'Slydo Mobility needs camera access to click vehicle photos.',
+      buttonPositive: 'Allow',
+      buttonNegative: 'Cancel',
+    });
+    if (result === PermissionsAndroid.RESULTS.GRANTED) return true;
     Alert.alert(
-      'Add Vehicle Photo',
-      'Choose how to add the photo',
+      'Camera permission needed',
+      'Please allow camera access from app settings to take vehicle photos.',
       [
-        {
-          text: 'Take Photo',
-          onPress: () => void pickVehicleImageFromCamera(field, fallbackName),
-        },
-        {
-          text: 'Choose from Gallery',
-          onPress: () => void pickVehicleImageFromGallery(field, fallbackName),
-        },
         { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => void Linking.openSettings() },
       ],
-      { cancelable: true },
     );
+    return false;
   };
 
   const handleVehicleAsset = async (
@@ -579,6 +604,8 @@ export default function App() {
     field: 'frontPhoto' | 'sidePhoto',
     fallbackName: string,
   ) => {
+    const hasPermission = await ensureCameraPermission();
+    if (!hasPermission) return;
     const options: CameraOptions = {
       mediaType: 'photo',
       cameraType: 'back',
@@ -716,6 +743,7 @@ export default function App() {
       setPayouts(payoutsRes.payouts || []);
       setVehicles(vehiclesRes.vehicles || []);
       setFaqs(faqRes.faqs || []);
+      setSupportContact(faqRes.contact || null);
       setTickets(ticketsRes.tickets || []);
       setSettings({
         ...DEFAULT_SETTINGS,
@@ -790,6 +818,7 @@ export default function App() {
   const loadSupport = async (sessionToken: string) => {
     const [faqRes, ticketRes] = await Promise.all([ownerApi.faqs(sessionToken), ownerApi.tickets(sessionToken)]);
     setFaqs(faqRes.faqs || []);
+    setSupportContact(faqRes.contact || null);
     setTickets(ticketRes.tickets || []);
   };
 
@@ -846,7 +875,7 @@ export default function App() {
         }
 
         await ensureMinSplash();
-        if (active) setStep('register');
+        if (active) setStep(resolveKycStep(result.owner));
       } catch (error) {
         await clearAuthToken();
         console.log('Failed to restore owner session:', error);
@@ -948,7 +977,7 @@ export default function App() {
       void persistAuthToken(result.token);
       setOwner(result.owner);
       syncProfileForm(result.owner, bank);
-      const nextStep = resolveKycStep(result.owner?.kycStatus);
+      const nextStep = resolveKycStep(result.owner);
 
       if (nextStep === 'dashboard') {
         await loadDashboardData(result.token);
@@ -967,7 +996,7 @@ export default function App() {
         return;
       }
 
-      setStep('register');
+      setStep(nextStep);
     } catch (error) {
       Alert.alert('OTP verification failed', ownerApiErrorMessage(error));
     } finally {
@@ -986,6 +1015,7 @@ export default function App() {
         address: resolvedAddress,
         mobile: normalizedPhone,
         city,
+        email: email.trim() || undefined,
         companyName: owner?.companyName || 'Slydo Mobility Fleet',
       };
 
@@ -1008,6 +1038,7 @@ export default function App() {
 
       const result = await ownerApi.updateProfile(token, {
         name: fullName,
+        email: email.trim() || undefined,
         address,
         adress: address,
         city,
@@ -1056,7 +1087,7 @@ export default function App() {
         await loadProfile(token);
         setStep('documents');
       } else {
-        setStep('bank-details-onboarding');
+        setStep('pending-approval');
       }
     } catch (error) {
       const message = ownerApiErrorMessage(error);
@@ -1309,17 +1340,60 @@ export default function App() {
     }
   };
 
+  const handleToggleMaintenance = async (next: boolean) => {
+    if (!token || !activeVehicle) return;
+    setMaintenanceToggleBusy(true);
+    try {
+      await ownerApi.updateVehicle(token, activeVehicle._id, {
+        status: next ? 'MAINTENANCE' : 'ACTIVE',
+      });
+      const result = await ownerApi.vehicleDetail(token, activeVehicle._id);
+      setVehicleDetail(result.vehicle);
+      await loadVehicles(token);
+    } catch (error) {
+      Alert.alert('Could not update status', ownerApiErrorMessage(error));
+    } finally {
+      setMaintenanceToggleBusy(false);
+    }
+  };
+
   const handleRemoveVehicle = async () => {
     if (!token || !activeVehicle) return;
     setAuthBusy(true);
     try {
       await ownerApi.removeVehicle(token, activeVehicle._id);
       await loadVehicles(token);
-      setStep('vehicles');
+      setShowRemoveSuccess(true);
+      setStep('vehicle-details');
+      setTimeout(() => {
+        setShowRemoveSuccess(false);
+        setStep('vehicles');
+      }, 2500);
     } catch (error) {
       Alert.alert('Could not remove vehicle', ownerApiErrorMessage(error));
     } finally {
       setAuthBusy(false);
+    }
+  };
+
+  const handleRequestStop = async () => {
+    if (!token || !activeVehicle) return;
+    setRequestStopBusy(true);
+    try {
+      await ownerApi.createTicket(token, {
+        subject: `Stop request: ${activeVehicle.registrationNumber || activeVehicle.modelName || 'vehicle'}`,
+        message: `Please stop vehicle ${activeVehicle.modelName || ''} (${
+          activeVehicle.registrationNumber || activeVehicle._id
+        }) at the earliest.`,
+      });
+      showNotice({
+        title: 'Request sent',
+        message: 'Admin has been notified to stop this vehicle.',
+      });
+    } catch (error) {
+      Alert.alert('Could not send request', ownerApiErrorMessage(error));
+    } finally {
+      setRequestStopBusy(false);
     }
   };
 
@@ -1340,12 +1414,10 @@ export default function App() {
         setStep(dest);
       } else {
         setShowBankEditModal(false);
+        setShowBankUpdateSuccess(true);
+        setTimeout(() => setShowBankUpdateSuccess(false), 2500);
       }
       await loadProfile(token);
-      showNotice({
-        title: 'Bank details updated',
-        message: 'Your bank details were submitted for review.',
-      });
     } catch (error) {
       Alert.alert('Could not update bank details', ownerApiErrorMessage(error));
     } finally {
@@ -1391,8 +1463,8 @@ export default function App() {
             email={email}
             mobileNumber={mobileNumber}
             city={city}
-            acceptedTerms={acceptedTerms}
-            onToggleTerms={() => setAcceptedTerms((value) => !value)}
+            acceptedTerms={registerAcceptedTerms}
+            onToggleTerms={() => setRegisterAcceptedTerms((value) => !value)}
             onChangeFullName={setFullName}
             onChangeEmail={setEmail}
             onChangeMobile={setMobileNumber}
@@ -1478,6 +1550,10 @@ export default function App() {
             onOpenMap={() => setStep('vehicle-map')}
             onRemove={() => setStep('vehicle-remove')}
             onOpenProfile={() => setStep('profile')}
+            onToggleMaintenance={(next) => void handleToggleMaintenance(next)}
+            toggleBusy={maintenanceToggleBusy}
+            showRemoveSuccess={showRemoveSuccess}
+            onDismissToast={() => setShowRemoveSuccess(false)}
             onTabPress={handleBottomTabPress}
             vehicle={activeVehicle}
             stations={stations}
@@ -1489,6 +1565,8 @@ export default function App() {
             onBack={() => setStep('vehicle-details')}
             onGoHome={() => setStep('dashboard')}
             onTabPress={handleBottomTabPress}
+            onRequestStop={() => void handleRequestStop()}
+            requestStopBusy={requestStopBusy}
             vehicle={activeVehicle}
             stations={stations}
           />
@@ -1754,6 +1832,7 @@ export default function App() {
             settings={settings}
             onToggleSetting={handleSettingsToggle}
             onSave={handleSaveSettings}
+            onTabPress={handleBottomTabPress}
           />
         );
       case 'support':
@@ -1761,6 +1840,7 @@ export default function App() {
           <SupportScreen
             onBack={() => setStep('profile')}
             faqs={faqs}
+            contact={supportContact}
             tickets={tickets}
             subject={ticketSubject}
             message={ticketMessage}
@@ -1768,6 +1848,7 @@ export default function App() {
             onChangeMessage={setTicketMessage}
             onSubmitTicket={handleTicketSubmit}
             loading={authBusy}
+            onTabPress={handleBottomTabPress}
           />
         );
       case 'documents':
@@ -1779,7 +1860,12 @@ export default function App() {
             vehicles={vehicles}
             onViewAadhaar={() => void openDocumentUrl(kyc?.documents?.adharFile || owner?.adharFile, 'Aadhaar document is not available yet.')}
             onViewPan={() => void openDocumentUrl(kyc?.documents?.panFile || owner?.panFile, 'PAN document is not available yet.')}
-            onViewInsurance={() => void openDocumentUrl(vehicles[0]?.documents?.insuranceUrl, 'Insurance document is not available yet.')}
+            onViewInsurance={() =>
+              void openDocumentUrl(
+                vehicles.find((v) => v.documents?.insuranceUrl)?.documents?.insuranceUrl,
+                'Insurance document is not available yet.',
+              )
+            }
             onRequestChange={(field) => {
               if (field === 'insurance') {
                 Alert.alert('Change insurance document', 'Please update insurance documents from your vehicle details screen.');
@@ -1790,6 +1876,7 @@ export default function App() {
               setKycRequestDocument(field);
               setStep('kyc');
             }}
+            onTabPress={handleBottomTabPress}
           />
         );
       case 'bank-details':
@@ -1797,12 +1884,15 @@ export default function App() {
           <BankDetailsScreen
             onBack={() => setStep('profile')}
           onOpenEdit={() => setShowBankEditModal(true)}
+          onViewStatement={() => setStep('earnings')}
+          onTabPress={handleBottomTabPress}
           bank={bank}
           owner={owner}
           form={bankForm}
           onChangeForm={handleBankFormChange}
           onSubmit={handleBankSubmit}
           showEditModal={showBankEditModal}
+          showRemoveSuccess={showBankUpdateSuccess}
         />
         );
       case 'bank-details-onboarding':
@@ -1870,7 +1960,7 @@ export default function App() {
         if (kycStatus === 'APPROVED' && shouldNavigate) {
           await loadDashboardData(token);
           if (!active) return;
-          setStep('dashboard');
+          setStep('activated');
           return;
         }
 
@@ -1892,11 +1982,26 @@ export default function App() {
 
     void syncKycStatus();
 
+    // Keep checking while waiting on the pending screen so admin approval is picked up live.
+    const pollId =
+      step === 'pending-approval'
+        ? setInterval(() => {
+            if (AppState.currentState === 'active') void syncKycStatus();
+          }, 10000)
+        : null;
+
     return () => {
       active = false;
       appStateSubscription.remove();
+      if (pollId) clearInterval(pollId);
     };
   }, [step, token]);
+
+  useEffect(() => {
+    if (step !== 'activated') return;
+    const timeoutId = setTimeout(() => setStep('dashboard'), 5000);
+    return () => clearTimeout(timeoutId);
+  }, [step]);
 
   return (
     <SafeAreaView style={styles.root}>
@@ -1913,6 +2018,21 @@ export default function App() {
         message={notice?.message}
         actionLabel={notice?.actionLabel || 'OK'}
         onAction={hideNotice}
+      />
+      <PhotoSourceSheet
+        visible={Boolean(vehiclePhotoField)}
+        title="Add Vehicle Photo"
+        onClose={() => setVehiclePhotoField(null)}
+        onTakePhoto={() => {
+          const field = vehiclePhotoField;
+          setVehiclePhotoField(null);
+          if (field) void pickVehicleImageFromCamera(field, vehiclePhotoFallbackName(field));
+        }}
+        onChooseGallery={() => {
+          const field = vehiclePhotoField;
+          setVehiclePhotoField(null);
+          if (field) void pickVehicleImageFromGallery(field, vehiclePhotoFallbackName(field));
+        }}
       />
     </SafeAreaView>
   );

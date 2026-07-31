@@ -1,16 +1,20 @@
 import { Platform } from 'react-native';
 
-const HOSTED_OWNER_API_BASE_URL = 'https://mira-ai.marioxsoftware.net/scooty/v1/api';
+const HOSTED_OWNER_API_BASE_URL = 'https://backend.slydomobility.com/v1/api';
+// USB device: requires `adb reverse tcp:3000 tcp:3000` (router blocks LAN access to the PC).
+// Android emulator alternative: 10.0.2.2. Wi-Fi-only device: LAN IP of the dev machine.
 const LOCAL_OWNER_API_BASE_URL = Platform.select({
-  android: 'http://10.0.2.2:3000/v1/api',
+  android: 'http://localhost:3000/v1/api',
   ios: 'http://localhost:3000/v1/api',
   default: 'http://localhost:3000/v1/api',
 });
 
 const globalOwnerApiBaseUrl = (globalThis as { __OWNER_API_BASE_URL__?: string }).__OWNER_API_BASE_URL__;
 
+// Dev builds hit the local backend; set globalThis.__OWNER_API_BASE_URL__ to override
 export const OWNER_API_BASE_URL: string =
-  globalOwnerApiBaseUrl?.trim() || HOSTED_OWNER_API_BASE_URL;
+  globalOwnerApiBaseUrl?.trim() ||
+  (__DEV__ ? (LOCAL_OWNER_API_BASE_URL as string) : HOSTED_OWNER_API_BASE_URL);
 
 type JsonObject = Record<string, unknown>;
 
@@ -243,6 +247,11 @@ export type SupportFaq = {
   answer?: string;
 };
 
+export type SupportContact = {
+  phone?: string;
+  email?: string;
+};
+
 export type SupportTicket = {
   _id: string;
   subject?: string;
@@ -409,7 +418,14 @@ const request = async <T>(path: string, options: RequestOptions = {}): Promise<T
 };
 
 export const ownerApi = {
-  signup: (payload: { fullName: string; address: string; mobile: string; city: string; companyName?: string }) =>
+  signup: (payload: {
+    fullName: string;
+    address: string;
+    mobile: string;
+    city: string;
+    email?: string;
+    companyName?: string;
+  }) =>
     request<{ token: string; owner: Owner }>('/owner/auth/signup', {
       method: 'POST',
       body: payload,
@@ -613,6 +629,7 @@ export const ownerApi = {
       chassisNumber?: string;
       stationId?: string;
       submit?: boolean;
+      status?: 'ACTIVE' | 'MAINTENANCE';
     },
   ) =>
     request<{ vehicle: VehicleItem }>(`/owner/vehicles/${vehicleId}`, {
@@ -625,7 +642,8 @@ export const ownerApi = {
       method: 'DELETE',
       token,
     }),
-  faqs: (token: string) => request<{ faqs: SupportFaq[] }>('/owner/support/faqs', { token }),
+  faqs: (token: string) =>
+    request<{ faqs: SupportFaq[]; contact?: SupportContact }>('/owner/support/faqs', { token }),
   tickets: (token: string) => request<{ tickets: SupportTicket[] }>('/owner/support/tickets', { token }),
   createTicket: (token: string, payload: { subject: string; message: string }) =>
     request<{ ticket: SupportTicket }>('/owner/support/tickets', {

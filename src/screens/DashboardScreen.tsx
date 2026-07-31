@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import {
@@ -42,16 +42,14 @@ function ActionCard({
   label,
   icon,
   onPress,
-  active,
 }: {
   label: string;
   icon: React.ReactNode;
   onPress: () => void;
-  active?: boolean;
 }) {
   return (
     <Pressable style={styles.actionCard} onPress={onPress}>
-      <View style={[styles.actionIconCircle, active && styles.actionIconCircleActive]}>{icon}</View>
+      <View style={styles.actionIconCircle}>{icon}</View>
       <Text style={styles.actionLabel}>{label}</Text>
     </Pressable>
   );
@@ -141,42 +139,45 @@ export function DashboardScreen({
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.topRow}>
-            <View style={styles.greetingWrap}>
-              <Text style={styles.greetingSmall}>Good Morning</Text>
-              <Text style={styles.greetingName}>{owner?.name || 'Owner'}</Text>
+          <View style={styles.headerCard}>
+            <View style={styles.topRow}>
+              <View style={styles.greetingWrap}>
+                <Text style={styles.greetingSmall}>Good Morning</Text>
+                <Text style={styles.greetingName}>{owner?.name || 'Owner'}</Text>
+              </View>
+              <Pressable onPress={onOpenNotifications} style={styles.bellWrap} hitSlop={8}>
+                <BellIcon size={24} color="#1e293b" />
+                {unreadCount > 0 ? (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{String(unreadCount)}</Text>
+                  </View>
+                ) : null}
+              </Pressable>
             </View>
-            <Pressable onPress={onOpenNotifications} style={styles.bellWrap}>
-              <BellIcon size={24} color="#0f172a" />
-              {unreadCount > 0 ? (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{String(unreadCount)}</Text>
-                </View>
-              ) : null}
-            </Pressable>
+
+            <View style={styles.earningsCard}>
+              <View style={styles.earningsLeft}>
+                <Text style={styles.earningsLabel}>Today&apos;s Earnings</Text>
+                <Text style={styles.earningsValue}>{formatCurrency(todaysEarnings)}</Text>
+              </View>
+              <TrendUpIcon size={28} color="#0f172a" />
+            </View>
+
+            <View style={styles.walletCard}>
+              <View style={styles.walletIconWrap}>
+                <WalletIcon size={20} color="#fc4c02" />
+              </View>
+              <View style={styles.walletTextWrap}>
+                <Text style={styles.walletLabel}>Wallet Balance</Text>
+                <Text style={styles.walletValue}>{formatCurrency(walletBalance)}</Text>
+              </View>
+              <Pressable style={styles.withdrawButton} onPress={onOpenPayout}>
+                <Text style={styles.withdrawText}>Withdraw</Text>
+              </Pressable>
+            </View>
           </View>
 
-          <View style={styles.earningsCard}>
-            <View style={styles.earningsLeft}>
-              <Text style={styles.earningsLabel}>Today&apos;s Earnings</Text>
-              <Text style={styles.earningsValue}>{formatCurrency(todaysEarnings)}</Text>
-            </View>
-            <TrendUpIcon size={28} color="#0f172a" />
-          </View>
-
-          <View style={styles.walletCard}>
-            <View style={styles.walletIconWrap}>
-              <WalletIcon size={20} color="#fc4c02" />
-            </View>
-            <View style={styles.walletTextWrap}>
-              <Text style={styles.walletLabel}>Wallet Balance</Text>
-              <Text style={styles.walletValue}>{formatCurrency(walletBalance)}</Text>
-            </View>
-            <Pressable style={styles.withdrawButton} onPress={onOpenPayout}>
-              <Text style={styles.withdrawText}>Withdraw</Text>
-            </Pressable>
-          </View>
-
+          <View style={styles.bodyWrap}>
           <View style={styles.tilesRow}>
             <Tile
               label="Total Vehicles"
@@ -198,7 +199,7 @@ export function DashboardScreen({
             <Tile
               label="Maintenance"
               value={String(dashboard?.maintenanceOpenCount ?? 0)}
-              icon={<WrenchIcon size={20} color="#fc4c02" />}
+              icon={<WrenchIcon size={20} color="#ef4444" />}
             />
           </View>
 
@@ -208,7 +209,6 @@ export function DashboardScreen({
               label="Add Vehicle"
               icon={<PlusIcon size={22} color="#0f172a" />}
               onPress={onOpenAddVehicle}
-              active
             />
             <ActionCard
               label="Earnings"
@@ -246,6 +246,7 @@ export function DashboardScreen({
               </Text>
             </View>
           )}
+          </View>
         </ScrollView>
       </View>
 
@@ -266,9 +267,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
     paddingBottom: 24,
+  },
+  headerCard: {
+    backgroundColor: 'rgba(255,255,255,0.45)',
+    paddingHorizontal: 24,
+    paddingTop: 48,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    marginBottom: 24,
+  },
+  bodyWrap: {
+    paddingHorizontal: 24,
   },
   topRow: {
     flexDirection: 'row',
@@ -291,40 +302,36 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   bellWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.62)',
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
+    top: 0,
+    right: 2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#ef4444',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
   },
   badgeText: {
     color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16,
+    fontSize: 10,
+    fontWeight: '600',
+    lineHeight: 12,
   },
   earningsCard: {
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    borderWidth: 1.162,
-    borderColor: '#e5e7eb',
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -347,13 +354,15 @@ const styles = StyleSheet.create({
   },
   walletCard: {
     borderRadius: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(255,244,236,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.75)',
     paddingHorizontal: 16,
     height: 76,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
@@ -362,7 +371,7 @@ const styles = StyleSheet.create({
   walletIconWrap: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: 'rgba(255,230,219,0.76)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -386,10 +395,10 @@ const styles = StyleSheet.create({
   withdrawButton: {
     height: 36,
     paddingHorizontal: 17,
-    borderRadius: 16,
-    borderWidth: 1.162,
+    borderRadius: 18,
+    borderWidth: 1.2,
     borderColor: '#fc4c02',
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'rgba(255,255,255,0.85)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -454,11 +463,11 @@ const styles = StyleSheet.create({
   },
   actionsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 12,
     marginBottom: 4,
   },
   actionCard: {
-    width: 106,
+    flex: 1,
     height: 106,
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.3)',
@@ -471,12 +480,8 @@ const styles = StyleSheet.create({
   actionIconCircle: {
     width: 48,
     height: 48,
-    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  actionIconCircleActive: {
-    backgroundColor: 'rgba(255,255,255,0.6)',
   },
   actionLabel: {
     color: '#0f172a',
@@ -487,19 +492,14 @@ const styles = StyleSheet.create({
   },
   activityCard: {
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.55)',
-    borderLeftWidth: 3.485,
+    backgroundColor: 'rgba(255,255,255,0.65)',
+    borderLeftWidth: 4,
     borderLeftColor: '#fc4c02',
     paddingVertical: 16,
     paddingHorizontal: 16,
     flexDirection: 'row',
     gap: 12,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
   },
   activityIconWrap: {
     width: 40,

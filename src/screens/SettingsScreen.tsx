@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { AppBackground } from '../components/AppBackground';
+import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import {
   ArrowLeftIcon,
   ChevronRightIcon,
@@ -9,20 +9,6 @@ import {
   ShieldCheckIcon,
 } from '../components/OwnerIcons';
 import { OwnerSettings } from '../services/ownerApi';
-
-function GradientToggleFill() {
-  return (
-    <Svg width="100%" height="100%">
-      <Defs>
-        <LinearGradient id="settingsToggleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <Stop offset="0%" stopColor="#fc4c02" stopOpacity={1} />
-          <Stop offset="100%" stopColor="#ff7a45" stopOpacity={1} />
-        </LinearGradient>
-      </Defs>
-      <Rect width="100%" height="100%" fill="url(#settingsToggleGrad)" rx={999} ry={999} />
-    </Svg>
-  );
-}
 
 function Toggle({
   value,
@@ -33,14 +19,10 @@ function Toggle({
 }) {
   return (
     <Pressable
-      style={[styles.toggle, !value && styles.toggleOff]}
+      style={[styles.toggle, value ? styles.toggleOn : styles.toggleOff]}
       onPress={() => onChange(!value)}
+      hitSlop={8}
     >
-      {value ? (
-        <View style={StyleSheet.absoluteFill}>
-          <GradientToggleFill />
-        </View>
-      ) : null}
       <View style={[styles.toggleThumb, value && styles.toggleThumbOn]} />
     </Pressable>
   );
@@ -95,11 +77,13 @@ export function SettingsScreen({
   onBack,
   settings,
   onToggleSetting,
+  onTabPress,
 }: {
   onBack: () => void;
   settings?: OwnerSettings | null;
   onToggleSetting?: (key: keyof NonNullable<OwnerSettings['notifications']>, next: boolean) => void;
   onSave?: () => void;
+  onTabPress?: (tab: TabKey) => void;
 }) {
   const notifications = settings?.notifications || {};
 
@@ -163,6 +147,8 @@ export function SettingsScreen({
 
         <Text style={styles.version}>Version 1.0.0</Text>
       </ScrollView>
+
+      <BottomTabs active="profile" onTabPress={onTabPress ?? (() => undefined)} />
     </View>
   );
 }
@@ -170,9 +156,9 @@ export function SettingsScreen({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 82,
+    height: 96,
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 40,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.62)',
@@ -187,10 +173,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heading: {
-    color: '#000000',
-    fontSize: 24,
-    fontWeight: '500',
-    lineHeight: 32,
+    color: '#0f172a',
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 30,
   },
   content: {
     paddingHorizontal: 24,
@@ -200,18 +186,18 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.49)',
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.62)',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    borderColor: 'rgba(255,255,255,0.55)',
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 10,
   },
   cardTitle: {
     color: '#0f172a',
-    fontSize: 24,
-    fontWeight: '600',
-    lineHeight: 27,
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 28,
     marginBottom: 16,
   },
   notificationsList: {
@@ -231,9 +217,9 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     color: '#0f172a',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 14,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   notificationSubtitle: {
     marginTop: 2,
@@ -242,22 +228,29 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   toggle: {
-    width: 32,
-    height: 18,
+    width: 44,
+    height: 24,
     borderRadius: 999,
-    padding: 1,
+    padding: 2,
     justifyContent: 'center',
-    overflow: 'hidden',
+  },
+  toggleOn: {
+    backgroundColor: '#fc4c02',
   },
   toggleOff: {
     backgroundColor: '#cbd5e1',
   },
   toggleThumb: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#ffffff',
     alignSelf: 'flex-start',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
   toggleThumbOn: {
     alignSelf: 'flex-end',

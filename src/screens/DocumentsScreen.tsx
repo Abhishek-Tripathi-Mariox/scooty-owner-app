@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
+import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -18,7 +19,8 @@ function statusBadge(status: DocStatus) {
   if (status === 'VERIFIED') {
     return (
       <View style={styles.verifiedPill}>
-        <Text style={styles.verifiedPillText}>✓ Verified</Text>
+        <CheckIcon size={11} color="#16a34a" />
+        <Text style={styles.verifiedPillText}>Verified</Text>
       </View>
     );
   }
@@ -104,6 +106,7 @@ export function DocumentsScreen({
   onViewPan,
   onViewInsurance,
   onRequestChange,
+  onTabPress,
 }: {
   onBack: () => void;
   owner?: Owner | null;
@@ -113,15 +116,28 @@ export function DocumentsScreen({
   onViewPan?: () => void;
   onViewInsurance?: () => void;
   onRequestChange?: (field: 'adharFile' | 'panFile' | 'profilePhoto' | 'insurance') => void;
+  onTabPress?: (tab: TabKey) => void;
 }) {
-  const firstVehicle = vehicles[0] || null;
   const kycStatus = kyc?.status || owner?.kycStatus;
   const aadhaarStatus: DocStatus =
     kycStatus === 'APPROVED' ? 'VERIFIED' : kycStatus === 'PENDING' ? 'UNDER_REVIEW' : 'NOT_SUBMITTED';
   const panStatus = aadhaarStatus;
-  const insuranceStatus: DocStatus = firstVehicle?.documents?.insuranceUrl
-    ? 'UNDER_REVIEW'
-    : 'NOT_SUBMITTED';
+  // Insurance is verified as part of vehicle approval: once the admin approves the
+  // vehicle, its documents (RC/insurance) are considered verified too.
+  const APPROVED_VEHICLE_STATUSES = ['ACTIVE', 'IN_RIDE', 'CHARGING', 'MAINTENANCE', 'INACTIVE'];
+  const insuranceVehicle =
+    vehicles.find(
+      (v) =>
+        v.documents?.insuranceUrl &&
+        APPROVED_VEHICLE_STATUSES.includes((v.status || '').toUpperCase()),
+    ) ||
+    vehicles.find((v) => v.documents?.insuranceUrl) ||
+    null;
+  const insuranceStatus: DocStatus = !insuranceVehicle
+    ? 'NOT_SUBMITTED'
+    : APPROVED_VEHICLE_STATUSES.includes((insuranceVehicle.status || '').toUpperCase())
+      ? 'VERIFIED'
+      : 'UNDER_REVIEW';
   const submittedAt = kyc?.submittedAt || owner?.kycSubmittedAt;
   const uploadedLabel = submittedAt ? formatShortDate(submittedAt) : undefined;
 
@@ -173,19 +189,18 @@ export function DocumentsScreen({
           onRequestChange={() => onRequestChange?.('panFile')}
         />
       </ScrollView>
+
+      {onTabPress ? <BottomTabs active="profile" onTabPress={onTabPress} /> : null}
     </View>
   );
 }
 
-// suppress unused warning for CheckIcon (kept available if design shifts)
-void CheckIcon;
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 82,
+    height: 96,
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 40,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.62)',
@@ -267,13 +282,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   verifiedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: 'rgba(252,76,2,0.1)',
+    backgroundColor: 'rgba(34,197,94,0.12)',
   },
   verifiedPillText: {
-    color: '#fc4c02',
+    color: '#16a34a',
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 18,

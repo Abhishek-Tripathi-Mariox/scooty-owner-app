@@ -3,7 +3,7 @@ import { Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'reac
 import { AppBackground } from '../components/AppBackground';
 import { BrandMark } from '../components/BrandMark';
 import { GradientButton } from '../components/GradientButton';
-import { ArrowRightIcon } from '../components/OwnerIcons';
+import { ArrowRightIcon, CheckIcon } from '../components/OwnerIcons';
 import { PhoneIcon } from '../components/PhoneIcon';
 import { COLORS } from '../constants/theme';
 import { scaleSize, useResponsiveLayout } from '../utils/responsive';
@@ -67,7 +67,7 @@ export function LoginScreen({
 
         <Pressable style={styles.termsRow} onPress={onToggleTerms}>
           <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
-            {acceptedTerms ? <Text style={styles.checkboxMark}>✓</Text> : null}
+            {acceptedTerms ? <CheckIcon size={14} color="#ffffff" /> : null}
           </View>
           <Text style={styles.termsText}>
             I agree to the <Text style={styles.termsLink}>Terms & Conditions</Text> and{' '}
@@ -87,13 +87,13 @@ export function LoginScreen({
       </View>
 
       <View style={styles.footerBlock}>
-        <Text style={styles.footerHint}>New to Slydo Mobility?</Text>
+        <Text style={styles.footerHint}>New to MOVYRA?</Text>
         <Text style={styles.footerLink} onPress={onRegisterPress}>
           Register as Vehicle Owner
         </Text>
       </View>
 
-        <Text style={styles.copyright}>© 2026 Slydo Mobility. All rights reserved.</Text>
+        <Text style={styles.copyright}>© 2026 MOVYRA. All rights reserved.</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -159,19 +159,19 @@ const RAW_STYLES = {
     marginTop: 24,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    flexWrap: 'wrap',
   },
   checkbox: {
-    width: 16,
-    height: 16,
-    borderRadius: 3,
-    borderWidth: 1,
-    borderColor: COLORS.textSecondary,
-    marginTop: 4,
-    marginRight: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#a8a4ab',
+    marginTop: 3,
+    marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
+    flexShrink: 0,
   },
   checkboxChecked: {
     backgroundColor: COLORS.brandPrimary,
@@ -179,23 +179,23 @@ const RAW_STYLES = {
   },
   checkboxMark: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '900',
-    lineHeight: 11,
+    lineHeight: 15,
   },
   termsText: {
     flex: 1,
     color: COLORS.textSecondary,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: 28,
   },
   termsLink: {
     color: COLORS.textPrimary,
     textDecorationLine: 'underline',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 24,
+    fontSize: 17,
+    fontWeight: '600',
+    lineHeight: 28,
   },
   sendButton: {
     marginTop: 24,
