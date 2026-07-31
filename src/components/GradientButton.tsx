@@ -77,6 +77,8 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.55,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   label: {
     color: '#ffffff',

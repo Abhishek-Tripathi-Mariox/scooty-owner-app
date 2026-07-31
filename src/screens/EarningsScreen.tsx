@@ -341,7 +341,8 @@ export function EarningsScreen({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 56,
+    height: 96,
+    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,

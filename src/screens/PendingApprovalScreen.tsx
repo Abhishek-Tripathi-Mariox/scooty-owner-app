@@ -101,21 +101,21 @@ export function PendingApprovalScreen({
             label="Update KYC"
             onPress={onRetryKyc || (() => undefined)}
             style={styles.button}
-            height={48}
-            radius={14}
+            height={50}
+            radius={25}
           />
         ) : (
           <GradientButton
             label="Waiting for Approval"
             onPress={() => undefined}
             style={styles.button}
-            height={48}
-            radius={14}
+            height={50}
+            radius={25}
           />
         )}
 
         <Text style={styles.note}>
-          Once approved, you&apos;ll receive a notification and
+          Once approved, you&apos;ll receive a notification and can start using your dashboard.
         </Text>
       </View>
     </PageFrame>
@@ -125,21 +125,22 @@ export function PendingApprovalScreen({
 const RAW_STYLES = {
   pageTitle: {
     fontFamily: FONTS.bold,
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 28,
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 30,
   },
   content: {
     flex: 1,
     alignItems: 'center',
   },
   heading: {
-    color: '#353535',
-    fontSize: 24,
-    fontWeight: '600',
-    lineHeight: 28,
+    color: '#2f2f2f',
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 34,
     textAlign: 'center',
-    marginBottom: 16,
+    marginTop: 8,
+    marginBottom: 24,
   },
   heroWrap: {
     width: '100%',
@@ -153,21 +154,21 @@ const RAW_STYLES = {
     height: 205,
   },
   body: {
-    color: '#797878',
-    fontSize: 14,
+    color: '#8a8a8a',
+    fontSize: 16,
     fontWeight: '400',
-    lineHeight: 21,
+    lineHeight: 24,
     textAlign: 'center',
   },
   bodyStrong: {
-    color: '#4b4b4b',
-    fontWeight: '600',
+    color: '#3f3f3f',
+    fontWeight: '700',
   },
   subBody: {
-    marginTop: 8,
-    color: '#797878',
-    fontSize: 14,
-    lineHeight: 21,
+    marginTop: 16,
+    color: '#8a8a8a',
+    fontSize: 15,
+    lineHeight: 23,
     textAlign: 'center',
   },
   reasonCard: {
@@ -199,11 +200,11 @@ const RAW_STYLES = {
     width: '100%',
     minHeight: 70,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: 16,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.62)',
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.45)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -219,36 +220,37 @@ const RAW_STYLES = {
     flex: 1,
   },
   etaLabel: {
-    color: '#464646',
-    fontSize: 14,
-    lineHeight: 20,
+    color: '#3f3f3f',
+    fontSize: 15,
+    lineHeight: 22,
   },
   etaValue: {
-    color: '#464646',
-    fontSize: 14,
-    lineHeight: 20,
+    color: '#3f3f3f',
+    fontSize: 15,
+    lineHeight: 22,
   },
   etaPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: 'rgba(252,76,2,0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#f6d3bc',
   },
   etaPillText: {
-    color: '#4b4b4b',
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16,
+    color: '#3a3a3a',
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 17,
+    letterSpacing: 0.3,
   },
   button: {
-    marginTop: 24,
+    marginTop: 28,
     width: '100%',
   },
   note: {
-    marginTop: 16,
-    color: '#797878',
-    fontSize: 14,
+    marginTop: 20,
+    color: '#8a8a8a',
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
   },
 } as const;

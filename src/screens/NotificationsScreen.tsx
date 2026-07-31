@@ -140,7 +140,8 @@ export function NotificationsScreen({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 56,
+    height: 96,
+    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -206,18 +207,13 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.4)',
-    borderLeftWidth: 3.485,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+    borderLeftWidth: 4,
     borderLeftColor: '#fc4c02',
     paddingVertical: 16,
     paddingHorizontal: 16,
     flexDirection: 'row',
     gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
   },
   iconWrap: {
     width: 40,
@@ -258,7 +254,7 @@ const styles = StyleSheet.create({
   emptyCard: {
     padding: 16,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.45)',
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
   },

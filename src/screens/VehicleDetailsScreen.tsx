@@ -13,12 +13,11 @@ import {
   ArrowLeftIcon,
   ActivityIcon,
   BatteryIcon,
-  CheckIcon,
+  CloseIcon,
   LocationPinIcon,
   PlusIcon,
   RupeeIcon,
   StarIcon,
-  TrendUpIcon,
 } from '../components/OwnerIcons';
 import { StationItem, VehicleItem } from '../services/ownerApi';
 import { formatCurrency } from '../utils/format';
@@ -53,8 +52,11 @@ export function VehicleDetailsScreen({
   onRemove,
   onTabPress,
   onAddVehicle,
+  onToggleMaintenance,
+  toggleBusy = false,
   showRemoveModal = false,
   showRemoveSuccess = false,
+  onDismissToast,
   vehicle,
   stations = [],
 }: {
@@ -64,14 +66,20 @@ export function VehicleDetailsScreen({
   onRemove: () => void;
   onOpenProfile: () => void;
   onAddVehicle?: () => void;
+  onToggleMaintenance?: (next: boolean) => void;
+  toggleBusy?: boolean;
   onTabPress: (tab: TabKey) => void;
   showRemoveModal?: boolean;
   showRemoveSuccess?: boolean;
+  onDismissToast?: () => void;
   vehicle?: VehicleItem | null;
   stations?: StationItem[];
 }) {
   const status = (vehicle?.status || 'DRAFT').toUpperCase();
   const isMaintenance = status === 'MAINTENANCE';
+  const canToggleMaintenance =
+    Boolean(onToggleMaintenance) &&
+    ['ACTIVE', 'MAINTENANCE', 'CHARGING', 'INACTIVE'].includes(status);
   const performance = vehicle?.performance;
   const recentRideHistory = vehicle?.recentRideHistory || [];
   const averageRating = performance?.averageRating;
@@ -144,10 +152,24 @@ export function VehicleDetailsScreen({
               {formatStatusLabel(vehicle?.status)}
             </Text>
           </View>
-          <View style={styles.statusMeta}>
-            <Text style={styles.statusMetaLabel}>Current State</Text>
-            <Text style={styles.statusMetaValue}>{statusMessage}</Text>
-          </View>
+          {canToggleMaintenance ? (
+            <View style={styles.toggleWrap}>
+              <Text style={styles.toggleLabel}>Mark Maintenance</Text>
+              <Pressable
+                onPress={() => onToggleMaintenance?.(!isMaintenance)}
+                disabled={toggleBusy}
+                hitSlop={8}
+                style={[styles.toggle, isMaintenance && styles.toggleOn, toggleBusy && styles.toggleBusy]}
+              >
+                <View style={[styles.toggleThumb, isMaintenance && styles.toggleThumbOn]} />
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.statusMeta}>
+              <Text style={styles.statusMetaLabel}>Current State</Text>
+              <Text style={styles.statusMetaValue}>{statusMessage}</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.statsGrid}>
@@ -160,7 +182,7 @@ export function VehicleDetailsScreen({
               label="Battery Level"
             />
             <StatCard
-              icon={<TrendUpIcon size={24} color="#22c55e" />}
+              icon={<StarIcon size={24} color="#1e293b" />}
               value={averageRating != null ? averageRating.toFixed(1) : '—'}
               label="Performance"
             />
@@ -172,7 +194,7 @@ export function VehicleDetailsScreen({
               label="Total Earnings"
             />
             <StatCard
-              icon={<StarIcon size={24} color="#fc4c02" />}
+              icon={<ActivityIcon size={24} color="#1e293b" />}
               value={String(performance?.totalRides || 0)}
               label="Total Rides"
             />
@@ -231,11 +253,11 @@ export function VehicleDetailsScreen({
       </ScrollView>
 
       {showRemoveSuccess ? (
-        <View style={styles.toast} pointerEvents="none">
-          <View style={styles.toastIcon}>
-            <CheckIcon size={12} color="#ffffff" />
-          </View>
+        <View style={styles.toast}>
           <Text style={styles.toastText}>Vehicle removed successfully</Text>
+          <Pressable onPress={onDismissToast} hitSlop={8}>
+            <CloseIcon size={18} color="#0f172a" />
+          </Pressable>
         </View>
       ) : null}
 
@@ -245,6 +267,9 @@ export function VehicleDetailsScreen({
         <View style={styles.overlay}>
           <Pressable style={styles.backdrop} onPress={onBack} />
           <View style={styles.modal}>
+            <Pressable style={styles.modalClose} onPress={onBack} hitSlop={8}>
+              <CloseIcon size={20} color="#0f172a" />
+            </Pressable>
             <Text style={styles.modalTitle}>Remove Vehicle?</Text>
             <Text style={styles.modalText}>
               Are you sure you want to remove {vehicle?.modelName || 'this vehicle'}? This
@@ -266,7 +291,8 @@ export function VehicleDetailsScreen({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 56,
+    height: 96,
+    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -371,8 +397,9 @@ const styles = StyleSheet.create({
   },
   pillMaintenance: {
     borderRadius: 999,
-    borderWidth: 1.162,
-    borderColor: '#e2e8f0',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
+    backgroundColor: 'rgba(239,68,68,0.1)',
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -393,22 +420,30 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   toggle: {
-    width: 32,
-    height: 18,
+    width: 44,
+    height: 24,
     borderRadius: 999,
     backgroundColor: '#cbd5e1',
-    padding: 1,
+    padding: 2,
     justifyContent: 'center',
   },
   toggleOn: {
     backgroundColor: '#fc4c02',
   },
+  toggleBusy: {
+    opacity: 0.6,
+  },
   toggleThumb: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#ffffff',
     alignSelf: 'flex-start',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
   toggleThumbOn: {
     alignSelf: 'flex-end',
@@ -643,93 +678,91 @@ const styles = StyleSheet.create({
   modal: {
     width: '100%',
     maxWidth: 343,
-    borderRadius: 12,
-    backgroundColor: '#f8fafc',
-    borderWidth: 1.162,
-    borderColor: '#e2e8f0',
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
     padding: 24,
-    gap: 8,
+    paddingTop: 28,
+    gap: 10,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
+    elevation: 8,
+  },
+  modalClose: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#0f172a',
-    lineHeight: 18,
+    lineHeight: 26,
     textAlign: 'center',
   },
   modalText: {
-    marginTop: 8,
+    marginTop: 4,
     fontSize: 14,
     color: '#64748b',
-    lineHeight: 20,
+    lineHeight: 21,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   modalDanger: {
-    height: 36,
-    borderRadius: 10,
+    height: 48,
+    borderRadius: 12,
     backgroundColor: '#ef4444',
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalDangerText: {
     color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     lineHeight: 20,
   },
   modalCancel: {
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1.162,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalCancelText: {
     color: '#0f172a',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     lineHeight: 20,
   },
   toast: {
     position: 'absolute',
-    top: 72,
+    top: 44,
     alignSelf: 'center',
-    minWidth: 253,
-    height: 37,
     borderRadius: 12,
-    borderWidth: 1.162,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 14,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    gap: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 5,
-  },
-  toastIcon: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#22c55e',
-    alignItems: 'center',
-    justifyContent: 'center',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+    zIndex: 10,
   },
   toastText: {
-    color: '#64748b',
-    fontSize: 14,
+    color: '#334155',
+    fontSize: 15,
     lineHeight: 20,
   },
 });

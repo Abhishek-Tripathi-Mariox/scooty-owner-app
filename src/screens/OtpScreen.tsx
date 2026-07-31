@@ -86,7 +86,7 @@ export function OtpScreen({
         showsVerticalScrollIndicator={false}
       >
         <Pressable onPress={onBack} style={styles.backButton} hitSlop={10}>
-          <ArrowLeftIcon size={24} color={COLORS.textPrimary} />
+          <ArrowLeftIcon size={26} color="#171717" />
         </Pressable>
 
         <View style={styles.header}>
@@ -155,12 +155,12 @@ const RAW_STYLES = {
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 56,
     paddingBottom: 32,
   },
   backButton: {
-    width: 24,
-    height: 24,
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
@@ -177,13 +177,14 @@ const RAW_STYLES = {
     marginBottom: 12,
   },
   subtitle: {
-    color: '#717182',
-    fontSize: 14,
-    lineHeight: 20,
+    color: '#9b96a1',
+    fontSize: 16,
+    lineHeight: 24,
   },
   phone: {
-    color: COLORS.textPrimary,
-    fontWeight: '500',
+    color: '#171717',
+    fontSize: 16,
+    fontWeight: '700',
   },
   card: {
     width: '100%',
@@ -205,8 +206,8 @@ const RAW_STYLES = {
     marginTop: 24,
     textAlign: 'center',
     color: '#3f3f53',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
   },
   resendAccent: {
     color: '#fc4c02',
@@ -218,15 +219,15 @@ const RAW_STYLES = {
   changeNumberText: {
     marginTop: 32,
     textAlign: 'center',
-    color: COLORS.textPrimary,
-    fontSize: 12,
+    color: '#717182',
+    fontSize: 14,
     lineHeight: 24,
   },
   changeNumberLink: {
-    color: COLORS.textPrimary,
-    fontFamily: FONTS.medium,
+    color: '#171717',
+    fontFamily: FONTS.semiBold,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     lineHeight: 24,
     letterSpacing: 0,
     textAlign: 'center',

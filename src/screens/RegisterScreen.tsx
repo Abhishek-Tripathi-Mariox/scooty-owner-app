@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { GradientButton } from '../components/GradientButton';
+import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from '../components/OwnerIcons';
 import { COLORS } from '../constants/theme';
+import { useResponsiveLayout } from '../utils/responsive';
 import { useStyles } from '../utils/responsiveStyles';
 
 export function RegisterScreen({
@@ -42,6 +44,7 @@ export function RegisterScreen({
   onLoginPress: () => void;
   loading?: boolean;
 }) {
+  const layout = useResponsiveLayout();
   const styles = useStyles(RAW_STYLES);
   const canSubmit =
     !loading &&
@@ -66,7 +69,7 @@ export function RegisterScreen({
         showsVerticalScrollIndicator={false}
       >
         <Pressable onPress={onLoginPress} style={styles.backButton} hitSlop={10}>
-          <Text style={styles.backButtonText}>←</Text>
+          <ArrowLeftIcon size={26} color="#171717" />
         </Pressable>
 
         <View style={styles.header}>
@@ -100,7 +103,7 @@ export function RegisterScreen({
 
           <Pressable style={styles.termsRow} onPress={onToggleTerms}>
             <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
-              {acceptedTerms ? <Text style={styles.checkboxMark}>✓</Text> : null}
+              {acceptedTerms ? <CheckIcon size={12} color="#ffffff" /> : null}
             </View>
             <Text style={styles.termsText}>
               I agree to the <Text style={styles.termsLink}>Terms & Conditions</Text> and{' '}
@@ -110,12 +113,13 @@ export function RegisterScreen({
         </View>
 
         <GradientButton
-          label={loading ? 'Saving...' : 'Continue  →'}
+          label={loading ? 'Saving...' : 'Continue'}
           onPress={onContinue}
           style={styles.button}
           disabled={!canSubmit}
-          height={48}
+          height={layout.buttonHeight}
           radius={16}
+          rightIcon={loading ? undefined : <ArrowRightIcon size={18} color="#ffffff" />}
         />
 
         <Text style={styles.loginText}>
@@ -154,7 +158,7 @@ function LabeledInput({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#64748b"
+        placeholderTextColor={COLORS.textSecondary}
         editable={editable}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
@@ -172,7 +176,7 @@ const RAW_STYLES = {
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 56,
     paddingBottom: 32,
   },
   backButton: {
@@ -214,76 +218,80 @@ const RAW_STYLES = {
     borderColor: 'rgba(255,255,255,0.62)',
   },
   field: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   label: {
-    marginBottom: 8,
+    marginBottom: 6,
     color: COLORS.textPrimary,
     fontSize: 14,
     fontWeight: '500',
-    lineHeight: 14,
+    lineHeight: 20,
   },
   input: {
-    height: 45,
-    borderRadius: 10,
-    borderWidth: 1.162,
-    borderColor: '#e5e7eb',
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    paddingHorizontal: 12,
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    backgroundColor: COLORS.inputBg,
+    paddingHorizontal: 14,
     paddingVertical: 0,
     color: COLORS.textPrimary,
     fontSize: 14,
   },
   termsRow: {
-    marginTop: 8,
+    marginTop: 4,
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   checkbox: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
-    borderWidth: 1.162,
+    width: 18,
+    height: 18,
+    borderRadius: 5,
+    borderWidth: 1,
     borderColor: '#e2e8f0',
     marginTop: 2,
-    marginRight: 8,
+    marginRight: 10,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff',
+    flexShrink: 0,
   },
   checkboxChecked: {
-    backgroundColor: '#fc4c02',
-    borderColor: '#fc4c02',
+    backgroundColor: COLORS.brandPrimary,
+    borderColor: COLORS.brandPrimary,
   },
   checkboxMark: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '900',
-    lineHeight: 11,
+    lineHeight: 13,
   },
   termsText: {
     flex: 1,
-    color: '#64748b',
+    color: COLORS.textSecondary,
     fontSize: 14,
     fontWeight: '500',
-    lineHeight: 17.5,
+    lineHeight: 21,
   },
   termsLink: {
     color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 21,
   },
   button: {
     marginTop: 24,
   },
   loginText: {
     textAlign: 'center',
-    marginTop: 24,
+    marginTop: 32,
     color: COLORS.textPrimary,
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 21,
   },
   loginLink: {
-    color: '#fc4d04',
-    fontSize: 16,
+    color: COLORS.accent,
+    fontSize: 14,
     fontWeight: '600',
   },
 } as const;

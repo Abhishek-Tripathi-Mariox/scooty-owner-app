@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { AppBackground } from '../components/AppBackground';
+import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import { GradientButton } from '../components/GradientButton';
 import { PageFrame } from '../components/PageFrame';
 import { ProgressBar } from '../components/ProgressBar';
@@ -9,6 +10,7 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   CloseIcon,
+  DocumentFileIcon,
   InfoIcon,
   PencilIcon,
 } from '../components/OwnerIcons';
@@ -32,6 +34,8 @@ function UploadArrowIcon({ size = 20, color = '#6a7282' }: { size?: number; colo
 export function BankDetailsScreen({
   onBack,
   onOpenEdit,
+  onViewStatement,
+  onTabPress,
   showEditModal = false,
   showRemoveSuccess = false,
   mode = 'profile',
@@ -44,6 +48,8 @@ export function BankDetailsScreen({
 }: {
   onBack: () => void;
   onOpenEdit: () => void;
+  onViewStatement?: () => void;
+  onTabPress?: (tab: TabKey) => void;
   showEditModal?: boolean;
   showRemoveSuccess?: boolean;
   mode?: 'profile' | 'onboarding';
@@ -167,7 +173,7 @@ export function BankDetailsScreen({
         <View style={styles.profileVerifiedBanner}>
           <View style={styles.profileVerifiedIcon}>
             {isVerified ? (
-              <CheckIcon size={20} color="#fc4c02" />
+              <CheckIcon size={20} color="#1e293b" />
             ) : (
               <InfoIcon size={20} color="#fc4c02" />
             )}
@@ -210,6 +216,13 @@ export function BankDetailsScreen({
           leftIcon={<PencilIcon size={16} color="#ffffff" />}
         />
 
+        {onViewStatement ? (
+          <Pressable style={styles.statementButton} onPress={onViewStatement}>
+            <DocumentFileIcon size={16} color="#fc4c02" />
+            <Text style={styles.statementButtonText}>View Transaction Statement</Text>
+          </Pressable>
+        ) : null}
+
         <View style={styles.profileInfoCard}>
           <InfoIcon size={20} color="#fc4c02" />
           <Text style={styles.profileInfoText}>
@@ -217,6 +230,8 @@ export function BankDetailsScreen({
           </Text>
         </View>
       </ScrollView>
+
+      {onTabPress ? <BottomTabs active="profile" onTabPress={onTabPress} /> : null}
 
       {showRemoveSuccess ? (
         <View style={styles.profileToastWrap} pointerEvents="none">
@@ -585,9 +600,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   profileTopbar: {
-    height: 82,
+    height: 96,
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 40,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.62)',
@@ -687,6 +702,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 21,
     textAlign: 'right',
+  },
+  statementButton: {
+    height: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fc4c02',
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  statementButtonText: {
+    color: '#fc4c02',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   profileInfoCard: {
     flexDirection: 'row',

@@ -129,8 +129,8 @@ export function KycScreen({
         onPress={isChangeRequest ? onSubmit : onNext}
         style={styles.button}
         disabled={loading || !isReady}
-        height={48}
-        radius={14}
+        height={46}
+        radius={23}
       />
     </PageFrame>
   );
@@ -138,32 +138,32 @@ export function KycScreen({
 
 const styles = StyleSheet.create({
   pageTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 28,
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 32,
   },
   section: {
-    marginTop: 16,
+    marginTop: 20,
   },
   sectionTitle: {
     color: COLORS.textPrimary,
     fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 28,
-    marginBottom: 16,
+    fontWeight: '700',
+    lineHeight: 26,
+    marginBottom: 12,
   },
   uploadBlock: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   uploadLabel: {
-    marginBottom: 8,
+    marginBottom: 6,
     fontSize: 14,
     color: COLORS.textPrimary,
-    fontWeight: '500',
-    lineHeight: 14,
+    fontWeight: '600',
+    lineHeight: 18,
   },
   uploadCard: {
-    height: 126,
+    height: 100,
     borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
@@ -178,8 +178,8 @@ const styles = StyleSheet.create({
   },
   uploadHint: {
     color: '#6a7282',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     textAlign: 'center',
     paddingHorizontal: 24,
   },
@@ -189,5 +189,6 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 8,
+    marginBottom: 8,
   },
 });

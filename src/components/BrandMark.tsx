@@ -8,8 +8,13 @@ const SlydoLogo = require('../assets/images/slydo-logo-upright.png');
 export function BrandMark() {
   return (
     <View style={styles.wrap}>
-      <Image source={SlydoLogo} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.title}>Slydo Mobility</Text>
+      <View style={styles.lockup}>
+        <Image source={SlydoLogo} style={styles.logo} resizeMode="contain" />
+        <View style={styles.wordmark}>
+          <Text style={styles.title}>Slydo</Text>
+          <Text style={styles.titleSub}>Mobility</Text>
+        </View>
+      </View>
       <Text style={styles.subtitle}>Vehicle Owner Portal</Text>
     </View>
   );
@@ -19,25 +24,39 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
   },
+  lockup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   logo: {
-    width: 88,
-    height: 88,
-    marginBottom: 18,
+    width: 62,
+    height: 62,
+    marginRight: 14,
+  },
+  wordmark: {
+    alignItems: 'center',
   },
   title: {
-    color: COLORS.textPrimary,
-    fontFamily: FONTS.bold,
-    fontSize: 28,
-    fontWeight: '700',
-    lineHeight: 34,
-    letterSpacing: 0.2,
-    textAlign: 'center',
+    color: '#171717',
+    fontFamily: FONTS.medium,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: 0.5,
+  },
+  titleSub: {
+    marginTop: -4,
+    color: '#171717',
+    fontFamily: FONTS.regular,
+    fontSize: 16,
+    lineHeight: 22,
   },
   subtitle: {
-    marginTop: 8,
+    marginTop: 22,
     color: COLORS.textPrimary,
-    fontSize: 14,
-    lineHeight: 20,
+    fontFamily: FONTS.semiBold,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 21,
     textAlign: 'center',
   },
 });

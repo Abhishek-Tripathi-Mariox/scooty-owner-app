@@ -9,8 +9,8 @@ const ProfileImage = require('../assets/images/bottom/profileimage.png');
 export type TabKey = 'home' | 'scooty' | 'earnings' | 'alerts' | 'profile';
 
 const ACTIVE_COLOR = '#fc4c02';
-const INACTIVE_COLOR = '#94a3b8';
-const INACTIVE_LABEL = '#6b7280';
+const INACTIVE_COLOR = '#5b6575';
+const INACTIVE_LABEL = '#5b6575';
 
 export function BottomTabs({
   active,
@@ -31,14 +31,9 @@ export function BottomTabs({
             onPress={() => onTabPress(tab.key)}
             hitSlop={6}
           >
-            <View
-              style={[
-                styles.iconWrap,
-                isActive && styles.iconWrapActive,
-              ]}
-            >
+            <View style={styles.iconWrap}>
               {tab.key === 'earnings' ? (
-                <EarningsIcon size={22} color={color} />
+                <EarningsIcon size={24} color={color} />
               ) : (
                 <Image
                   source={tab.image}
@@ -131,23 +126,19 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
-  },
-  iconWrapActive: {
-    backgroundColor: 'rgba(252, 76, 2, 0.12)',
+    marginBottom: 3,
   },
   iconImage: {
-    width: 22,
-    height: 22,
+    width: 26,
+    height: 26,
   },
   label: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     letterSpacing: 0.2,
   },
 });

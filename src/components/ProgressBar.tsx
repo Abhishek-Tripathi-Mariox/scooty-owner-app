@@ -1,6 +1,5 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { COLORS } from '../constants/theme';
 
 export function ProgressBar({ progress }: { progress: number }) {
   return (
@@ -12,14 +11,14 @@ export function ProgressBar({ progress }: { progress: number }) {
 
 const styles = StyleSheet.create({
   track: {
-    height: 6,
+    height: 8,
     borderRadius: 999,
-    backgroundColor: '#c8c0bf',
+    backgroundColor: '#8b8f98',
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    backgroundColor: COLORS.button,
+    backgroundColor: '#1e2939',
     borderRadius: 999,
   },
 });

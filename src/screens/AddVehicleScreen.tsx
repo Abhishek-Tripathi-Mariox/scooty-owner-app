@@ -312,8 +312,8 @@ export function AddVehicleScreen({
                 label="Continue"
                 onPress={onNext}
                 disabled={!canContinueStep1}
-                height={48}
-                radius={12}
+                height={50}
+                radius={25}
                 rightIcon={<ArrowRightIcon size={16} color="#ffffff" />}
                 style={styles.cta}
               />
@@ -328,19 +328,21 @@ export function AddVehicleScreen({
                 hint="Upload Front Photo"
                 fileName={frontPhoto?.name}
                 onPress={onPickFrontPhoto}
+                height={130}
               />
               <UploadCard
                 label="Side View"
                 hint="Upload Side Photo"
                 fileName={sidePhoto?.name}
                 onPress={onPickSidePhoto}
+                height={130}
               />
               <GradientButton
                 label="Continue"
                 onPress={onNext}
                 disabled={!canContinueStep2}
-                height={48}
-                radius={12}
+                height={50}
+                radius={25}
                 rightIcon={<ArrowRightIcon size={16} color="#ffffff" />}
                 style={styles.cta}
               />
@@ -356,7 +358,7 @@ export function AddVehicleScreen({
                 fileName={rcDocument?.name}
                 onPress={onPickRcDocument}
                 iconVariant="upload"
-                height={128}
+                height={118}
               />
               <UploadCard
                 label="Insurance"
@@ -364,14 +366,14 @@ export function AddVehicleScreen({
                 fileName={insuranceDocument?.name}
                 onPress={onPickInsuranceDocument}
                 iconVariant="upload"
-                height={128}
+                height={118}
               />
               <GradientButton
                 label="Continue"
                 onPress={onNext}
                 disabled={!canContinueStep3}
-                height={48}
-                radius={12}
+                height={50}
+                radius={25}
                 rightIcon={<ArrowRightIcon size={16} color="#ffffff" />}
                 style={styles.cta}
               />
@@ -407,8 +409,8 @@ export function AddVehicleScreen({
                 label={loading ? 'Submitting...' : 'Submit for Approval'}
                 onPress={onNext}
                 disabled={loading || !isReadyToSubmit}
-                height={48}
-                radius={12}
+                height={50}
+                radius={25}
                 rightIcon={<ArrowRightIcon size={16} color="#ffffff" />}
                 style={styles.cta}
               />
@@ -417,18 +419,19 @@ export function AddVehicleScreen({
                   Upload all files and choose a station to continue.
                 </Text>
               ) : null}
-              {loading ? (
-                <View style={styles.toast}>
-                  <View style={styles.toastIconWrap}>
-                    <CheckIcon size={12} color="#ffffff" />
-                  </View>
-                  <Text style={styles.toastText}>Request sent for admin approval.</Text>
-                </View>
-              ) : null}
             </>
           ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {step === 4 && loading ? (
+        <View style={styles.toast}>
+          <View style={styles.toastIconWrap}>
+            <CheckIcon size={12} color="#ffffff" />
+          </View>
+          <Text style={styles.toastText}>Request sent for admin approval.</Text>
+        </View>
+      ) : null}
 
       <BottomTabs active="home" onTabPress={onTabPress} />
     </View>
@@ -439,7 +442,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
   topbar: {
-    height: 56,
+    height: 96,
+    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -455,10 +459,10 @@ const styles = StyleSheet.create({
   },
   heading: {
     flex: 1,
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#101828',
-    lineHeight: 28,
+    lineHeight: 30,
   },
   stepLabel: {
     color: '#101828',
@@ -484,10 +488,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   content: {
+    flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 24,
-    gap: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
+    gap: 16,
   },
   formCard: {
     borderRadius: 24,
@@ -501,9 +506,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: '#0f172a',
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 28,
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 30,
     marginBottom: 0,
   },
   field: {
@@ -516,12 +521,12 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   input: {
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1.162,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: '#e2e8f0',
     backgroundColor: 'rgba(255,255,255,0.45)',
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 0,
     color: '#0f172a',
     fontSize: 16,
@@ -532,15 +537,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.62)',
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
   },
   uploadSectionLabel: {
     color: '#0f172a',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
-    lineHeight: 14,
+    lineHeight: 20,
     marginBottom: 8,
   },
   uploadArea: {
@@ -661,8 +666,9 @@ const styles = StyleSheet.create({
   },
   noteCard: {
     borderRadius: 16,
-    borderWidth: 1.162,
+    borderWidth: 1,
     borderColor: '#e2e8f0',
+    backgroundColor: 'rgba(255,255,255,0.35)',
     paddingHorizontal: 17,
     paddingVertical: 17,
     gap: 8,
@@ -685,13 +691,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   toast: {
-    marginTop: 8,
-    borderRadius: 8,
-    borderWidth: 1.162,
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 78,
+    borderRadius: 14,
+    borderWidth: 1,
     borderColor: '#bffcd9',
-    backgroundColor: '#ecfdf3',
-    paddingHorizontal: 13,
-    paddingVertical: 13,
+    backgroundColor: '#e9fbf0',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -699,7 +708,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    elevation: 3,
   },
   toastIconWrap: {
     width: 20,
