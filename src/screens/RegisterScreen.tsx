@@ -11,10 +11,13 @@ import {
 import { AppBackground } from '../components/AppBackground';
 import { GradientButton } from '../components/GradientButton';
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from '../components/OwnerIcons';
-import { COLORS } from '../constants/theme';
-import { useResponsiveLayout } from '../utils/responsive';
+import { FONTS } from '../constants/fonts';
+import { useScreenInsets } from '../utils/insets';
 import { useStyles } from '../utils/responsiveStyles';
 
+// Figma 475-13506 / 475-13773 "Create Account": plain back arrow, 30px bold
+// heading, 16px lead, one frosted card holding the four fields + the terms
+// row, then the gradient Continue button and the login link.
 export function RegisterScreen({
   fullName,
   email,
@@ -44,8 +47,8 @@ export function RegisterScreen({
   onLoginPress: () => void;
   loading?: boolean;
 }) {
-  const layout = useResponsiveLayout();
   const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const canSubmit =
     !loading &&
     fullName.trim().length > 0 &&
@@ -62,14 +65,17 @@ export function RegisterScreen({
       <AppBackground variant="auth" />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.headerTop - 12, paddingBottom: 32 + insets.bottom },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={onLoginPress} style={styles.backButton} hitSlop={10}>
-          <ArrowLeftIcon size={26} color="#171717" />
+        <Pressable onPress={onLoginPress} style={styles.backButton} hitSlop={12}>
+          <ArrowLeftIcon size={24} color="#1e293b" />
         </Pressable>
 
         <View style={styles.header}>
@@ -103,7 +109,7 @@ export function RegisterScreen({
 
           <Pressable style={styles.termsRow} onPress={onToggleTerms}>
             <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
-              {acceptedTerms ? <CheckIcon size={12} color="#ffffff" /> : null}
+              {acceptedTerms ? <CheckIcon size={11} color="#ffffff" /> : null}
             </View>
             <Text style={styles.termsText}>
               I agree to the <Text style={styles.termsLink}>Terms & Conditions</Text> and{' '}
@@ -117,9 +123,9 @@ export function RegisterScreen({
           onPress={onContinue}
           style={styles.button}
           disabled={!canSubmit}
-          height={layout.buttonHeight}
+          height={48}
           radius={16}
-          rightIcon={loading ? undefined : <ArrowRightIcon size={18} color="#ffffff" />}
+          rightIcon={loading ? undefined : <ArrowRightIcon size={16} color="#ffffff" />}
         />
 
         <Text style={styles.loginText}>
@@ -158,7 +164,7 @@ function LabeledInput({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={COLORS.textSecondary}
+        placeholderTextColor="#64748b"
         editable={editable}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
@@ -176,122 +182,123 @@ const RAW_STYLES = {
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 56,
-    paddingBottom: 32,
   },
   backButton: {
     width: 24,
     height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
-  },
-  backButtonText: {
-    fontSize: 24,
-    lineHeight: 24,
-    color: COLORS.textPrimary,
+    marginBottom: 24,
   },
   header: {
     width: '100%',
     marginBottom: 24,
   },
   title: {
-    color: COLORS.textPrimary,
+    color: '#1e293b',
+    fontFamily: FONTS.bold,
     fontSize: 30,
     fontWeight: '700',
     lineHeight: 36,
     marginBottom: 8,
   },
   subtitle: {
-    color: COLORS.textPrimary,
+    color: '#1e293b',
+    fontFamily: FONTS.regular,
     fontSize: 16,
     lineHeight: 24,
+    maxWidth: 307,
   },
   card: {
     width: '100%',
     borderRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 24,
+    paddingBottom: 16,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.62)',
   },
   field: {
-    marginBottom: 14,
+    marginBottom: 23,
   },
   label: {
-    marginBottom: 6,
-    color: COLORS.textPrimary,
+    marginBottom: 8,
+    color: '#1e293b',
+    fontFamily: FONTS.medium,
     fontSize: 14,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   input: {
-    height: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    backgroundColor: COLORS.inputBg,
-    paddingHorizontal: 14,
+    height: 45,
+    borderRadius: 10,
+    borderWidth: 1.162,
+    borderColor: '#e5e7eb',
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    paddingHorizontal: 12,
     paddingVertical: 0,
-    color: COLORS.textPrimary,
+    color: '#1e293b',
+    fontFamily: FONTS.regular,
     fontSize: 14,
   },
   termsRow: {
-    marginTop: 4,
+    paddingTop: 8,
     flexDirection: 'row',
     alignItems: 'flex-start',
+    gap: 8,
   },
   checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 5,
-    borderWidth: 1,
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    borderWidth: 1.162,
     borderColor: '#e2e8f0',
-    marginTop: 2,
-    marginRight: 10,
+    marginTop: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff',
     flexShrink: 0,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   checkboxChecked: {
-    backgroundColor: COLORS.brandPrimary,
-    borderColor: COLORS.brandPrimary,
-  },
-  checkboxMark: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '900',
-    lineHeight: 13,
+    backgroundColor: '#fc4c02',
+    borderColor: '#fc4c02',
   },
   termsText: {
     flex: 1,
-    color: COLORS.textSecondary,
+    color: '#64748b',
+    fontFamily: FONTS.medium,
     fontSize: 14,
     fontWeight: '500',
-    lineHeight: 21,
+    lineHeight: 17.5,
   },
   termsLink: {
-    color: COLORS.textPrimary,
+    color: '#1e293b',
+    fontFamily: FONTS.medium,
     fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 21,
+    fontWeight: '500',
+    lineHeight: 17.5,
   },
   button: {
     marginTop: 24,
   },
   loginText: {
     textAlign: 'center',
-    marginTop: 32,
-    color: COLORS.textPrimary,
-    fontSize: 14,
-    lineHeight: 21,
+    marginTop: 24,
+    color: '#1e293b',
+    fontFamily: FONTS.regular,
+    fontSize: 16,
+    lineHeight: 24,
   },
   loginLink: {
-    color: COLORS.accent,
-    fontSize: 14,
+    color: '#fc4d04',
+    fontFamily: FONTS.semiBold,
+    fontSize: 16,
     fontWeight: '600',
   },
 } as const;

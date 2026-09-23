@@ -21,6 +21,8 @@ import {
 } from '../components/OwnerIcons';
 import { StationItem, VehicleItem } from '../services/ownerApi';
 import { formatCurrency } from '../utils/format';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 function StatCard({
   icon,
@@ -31,6 +33,7 @@ function StatCard({
   value: string;
   label: string;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.statCard}>
       <View style={styles.statIcon}>{icon}</View>
@@ -75,6 +78,8 @@ export function VehicleDetailsScreen({
   vehicle?: VehicleItem | null;
   stations?: StationItem[];
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const status = (vehicle?.status || 'DRAFT').toUpperCase();
   const isMaintenance = status === 'MAINTENANCE';
   const canToggleMaintenance =
@@ -108,7 +113,7 @@ export function VehicleDetailsScreen({
     <View style={styles.root}>
       <AppBackground variant="auth" />
 
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.headerTop }]}>
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#101828" />
         </Pressable>
@@ -288,11 +293,10 @@ export function VehicleDetailsScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 96,
-    paddingTop: 40,
+    minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -475,7 +479,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    height: 116,
+    minHeight: 116,
     borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
@@ -765,4 +769,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
   },
-});
+} as const;

@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -21,6 +20,8 @@ import {
 } from '../components/OwnerIcons';
 import { StationItem, VehicleItem } from '../services/ownerApi';
 import { formatCompactCurrency } from '../utils/format';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 type VehicleFilter = 'ALL' | 'ACTIVE' | 'IN_RIDE' | 'CHARGING' | 'MAINTENANCE';
 
@@ -62,6 +63,8 @@ export function VehicleListScreen({
   vehicles?: VehicleItem[];
   stations?: StationItem[];
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const [selectedFilter, setSelectedFilter] = useState<VehicleFilter>('ALL');
   const [query, setQuery] = useState('');
 
@@ -82,7 +85,7 @@ export function VehicleListScreen({
     <View style={styles.root}>
       <AppBackground variant="auth" />
 
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.headerTop }]}>
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#101828" />
         </Pressable>
@@ -228,6 +231,7 @@ function VehicleStat({
   label: string;
   value: string;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.stat}>
       <View style={styles.statIconWrap}>{icon}</View>
@@ -241,11 +245,10 @@ function VehicleStat({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 96,
-    paddingTop: 40,
+    minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -449,4 +452,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
   },
-});
+} as const;

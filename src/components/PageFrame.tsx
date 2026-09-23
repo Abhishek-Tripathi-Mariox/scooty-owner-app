@@ -6,7 +6,6 @@ import {
   ScrollView,
   Platform,
   StyleProp,
-  StyleSheet,
   Text,
   TextStyle,
   View,
@@ -14,6 +13,8 @@ import {
 import { AppBackground } from './AppBackground';
 import { ArrowLeftIcon } from './OwnerIcons';
 import { COLORS, SPACING } from '../constants/theme';
+import { useStyles } from '../utils/responsiveStyles';
+import { useScreenInsets } from '../utils/insets';
 
 export function PageFrame({
   children,
@@ -32,6 +33,8 @@ export function PageFrame({
   topRight?: ReactNode;
   titleStyle?: StyleProp<TextStyle>;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   return (
     <SafeAreaView style={styles.safe}>
       <AppBackground />
@@ -43,7 +46,10 @@ export function PageFrame({
         {scroll ? (
           <ScrollView
             style={styles.container}
-            contentContainerStyle={styles.content}
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: 32 + insets.bottom },
+            ]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             automaticallyAdjustKeyboardInsets
@@ -58,7 +64,7 @@ export function PageFrame({
             <View style={styles.body}>{children}</View>
           </ScrollView>
         ) : (
-          <View style={styles.container}>
+          <View style={[styles.container, { paddingBottom: insets.bottom }]}>
             <FrameChrome
               title={title}
               subtitle={subtitle}
@@ -87,14 +93,16 @@ function FrameChrome({
   topRight?: ReactNode;
   titleStyle?: StyleProp<TextStyle>;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   return (
     <>
-      <View style={styles.searchLabelRow}>
+      <View style={[styles.searchLabelRow, { paddingTop: insets.headerTop }]}>
       </View>
       <View style={styles.headerRow}>
         {onBack ? (
           <Pressable onPress={onBack} style={styles.backButton} hitSlop={10}>
-            <ArrowLeftIcon size={26} color="#171717" />
+            <ArrowLeftIcon size={20} color="#171717" />
           </Pressable>
         ) : (
           <View style={styles.backPlaceholder} />
@@ -109,7 +117,7 @@ function FrameChrome({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   safe: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -120,11 +128,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    paddingBottom: 32,
   },
   searchLabelRow: {
     paddingHorizontal: SPACING.screenX,
-    paddingTop: 40,
   },
   searchLabel: {
     color: '#8d888c',
@@ -138,17 +144,26 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   backButton: {
-    width: 28,
-    height: 28,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-    marginTop: 1,
+    marginTop: -4,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.75)',
+    shadowColor: '#d9b7ab',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   backPlaceholder: {
-    width: 28,
-    height: 28,
-    marginRight: 10,
+    width: 38,
+    height: 38,
+    marginRight: 12,
   },
   headerTextWrap: {
     flex: 1,
@@ -174,4 +189,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.screenX,
     paddingTop: 0,
   },
-});
+} as const;

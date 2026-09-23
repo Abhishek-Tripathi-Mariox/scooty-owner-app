@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import {
@@ -17,6 +17,8 @@ import {
 import { COLORS } from '../constants/theme';
 import { Owner, Dashboard, NotificationItem, type DashboardActivityItem } from '../services/ownerApi';
 import { formatCurrency } from '../utils/format';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 function Tile({
   label,
@@ -27,6 +29,7 @@ function Tile({
   value: string;
   icon: React.ReactNode;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.tile}>
       <View style={styles.tileTopRow}>
@@ -47,6 +50,7 @@ function ActionCard({
   icon: React.ReactNode;
   onPress: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <Pressable style={styles.actionCard} onPress={onPress}>
       <View style={styles.actionIconCircle}>{icon}</View>
@@ -66,6 +70,7 @@ function ActivityCard({
   time: string;
   icon: React.ReactNode;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.activityCard}>
       <View style={styles.activityIconWrap}>{icon}</View>
@@ -111,6 +116,8 @@ export function DashboardScreen({
   onOpenProfile: () => void;
   onTabPress: (tab: TabKey) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const unreadCount = dashboard?.unreadNotifications ?? notifications?.filter((item) => !item.isRead).length ?? 0;
   const vehicleStats = dashboard?.vehicles?.byStatus || {};
   const walletBalance = dashboard?.walletBalance ?? owner?.walletBalance ?? 0;
@@ -139,7 +146,7 @@ export function DashboardScreen({
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.headerCard}>
+          <View style={[styles.headerCard, { paddingTop: insets.headerTop + 8 }]}>
             <View style={styles.topRow}>
               <View style={styles.greetingWrap}>
                 <Text style={styles.greetingSmall}>Good Morning</Text>
@@ -255,7 +262,7 @@ export function DashboardScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -272,7 +279,6 @@ const styles = StyleSheet.create({
   headerCard: {
     backgroundColor: 'rgba(255,255,255,0.45)',
     paddingHorizontal: 24,
-    paddingTop: 48,
     paddingBottom: 24,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
@@ -358,7 +364,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.75)',
     paddingHorizontal: 16,
-    height: 76,
+    minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
@@ -415,7 +421,7 @@ const styles = StyleSheet.create({
   },
   tile: {
     flex: 1,
-    height: 92,
+    minHeight: 92,
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
@@ -468,7 +474,7 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
-    height: 106,
+    minHeight: 106,
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
@@ -552,4 +558,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
-});
+} as const;

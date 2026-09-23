@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '../constants/theme';
+import { useStyles } from '../utils/responsiveStyles';
 
 export function NoticeModal({
   visible,
@@ -15,6 +16,7 @@ export function NoticeModal({
   actionLabel?: string;
   onAction: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <Modal transparent visible={visible} animationType="fade" statusBarTranslucent onRequestClose={onAction}>
       <View style={styles.overlay}>
@@ -35,7 +37,7 @@ export function NoticeModal({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   overlay: {
     flex: 1,
     justifyContent: 'center',
@@ -108,4 +110,4 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0.2,
   },
-});
+} as const;

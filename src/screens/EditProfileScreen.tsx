@@ -21,6 +21,7 @@ import {
   ChevronDownIcon,
 } from '../components/OwnerIcons';
 import { Owner, type KycUploadFile } from '../services/ownerApi';
+import { useStyles } from '../utils/responsiveStyles';
 
 const INDIAN_STATES = [
   'Andhra Pradesh',
@@ -116,6 +117,7 @@ function FloatingField({
   chipColor?: string;
   error?: string | null;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.field}>
       <View style={[styles.labelChip, chipColor ? { backgroundColor: chipColor } : null]}>
@@ -177,6 +179,7 @@ export function EditProfileScreen({
   onSubmit: () => void;
   loading?: boolean;
 }) {
+  const styles = useStyles(RAW_STYLES);
   const profilePhotoUrl = owner?.profilePhotoUrl || '';
   const hasPhoto = Boolean(profilePhoto?.uri || profilePhotoUrl);
   const [statePickerOpen, setStatePickerOpen] = useState(false);
@@ -380,11 +383,11 @@ export function EditProfileScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
   topbar: {
-    height: 82,
+    minHeight: 82,
     paddingHorizontal: 24,
     paddingTop: 24,
     backgroundColor: 'rgba(255,255,255,0.3)',
@@ -576,4 +579,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 24,
   },
-});
+} as const;

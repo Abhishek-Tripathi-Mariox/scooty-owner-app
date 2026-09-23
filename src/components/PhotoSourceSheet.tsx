@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useStyles } from '../utils/responsiveStyles';
 
 export function PhotoSourceSheet({
   visible,
@@ -14,6 +15,7 @@ export function PhotoSourceSheet({
   onChooseGallery: () => void;
   onClose: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.root}>
@@ -47,7 +49,7 @@ export function PhotoSourceSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: {
     flex: 1,
     justifyContent: 'center',
@@ -92,4 +94,4 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: '#e5e7eb',
   },
-});
+} as const;

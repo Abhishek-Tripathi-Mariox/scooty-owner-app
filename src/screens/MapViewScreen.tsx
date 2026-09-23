@@ -13,6 +13,8 @@ import { GradientButton } from '../components/GradientButton';
 import { LiveMap, type MapPin } from '../components/LiveMap';
 import { ArrowLeftIcon, ArrowRightIcon, PlusIcon } from '../components/OwnerIcons';
 import { StationItem, VehicleItem } from '../services/ownerApi';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 export function MapViewScreen({
   onBack,
@@ -32,6 +34,8 @@ export function MapViewScreen({
   vehicle?: VehicleItem | null;
   stations?: StationItem[];
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const parseCoordinate = (value?: number | string | null) => {
     if (value == null || value === '') return null;
     const parsed = typeof value === 'number' ? value : Number(value);
@@ -111,7 +115,7 @@ export function MapViewScreen({
     <View style={styles.root}>
       <AppBackground variant="auth" />
 
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.headerTop }]}>
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#101828" />
         </Pressable>
@@ -129,7 +133,7 @@ export function MapViewScreen({
       <View style={styles.mapArea}>
         <LiveMap center={center} pins={pins} style={StyleSheet.absoluteFillObject} />
 
-        <View style={styles.actions}>
+        <View style={[styles.actions, { bottom: 16 + insets.bottom }]}>
           <Pressable style={styles.backButton} onPress={onBack}>
             <Text style={styles.backButtonText}>Back</Text>
           </Pressable>
@@ -150,11 +154,10 @@ export function MapViewScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 96,
-    paddingTop: 40,
+    minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -204,7 +207,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -229,4 +231,4 @@ const styles = StyleSheet.create({
   primaryButton: {
     flex: 1,
   },
-});
+} as const;

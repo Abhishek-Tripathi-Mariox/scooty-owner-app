@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, KeyboardAvoidingView, Linking, NativeModules, PermissionsAndroid, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   launchCamera,
   launchImageLibrary,
@@ -19,7 +20,8 @@ import { AuthStep, OTP_LENGTH } from './src/constants/auth';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { KycScreen } from './src/screens/KycScreen';
 import { PendingApprovalScreen } from './src/screens/PendingApprovalScreen';
-import { AccountActivatedScreen } from './src/screens/AccountActivatedScreen';
+import { AccountActivatedSheet } from './src/components/AccountActivatedSheet';
+import { PermissionsScreen, type OwnerPermissions } from './src/screens/PermissionsScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
 import { RequestPayoutScreen } from './src/screens/RequestPayoutScreen';
@@ -56,7 +58,7 @@ import {
   type VehicleUploadFiles,
   OWNER_API_BASE_URL,
   ownerApi,
-  ownerApiErrorMessage,
+  ownerApiErrorMessage, ownerApiIsNetworkError,
 } from './src/services/ownerApi';
 import { FONTS } from './src/constants/fonts';
 
@@ -67,6 +69,7 @@ type AppStep =
   | 'kyc'
   | 'pending-approval'
   | 'activated'
+  | 'permissions'
   | 'dashboard'
   | 'notifications'
   | 'request-payout'
@@ -235,6 +238,12 @@ const getEarningsRangeQuery = (range: EarningsRange) => {
 
 export default function App() {
   const [step, setStep] = useState<AppStep>('splash');
+  // The splash + "Swipe to get started" always plays on launch, logged in or
+  // not. Auth bootstrap only decides where the swipe lands (dashboard, kyc,
+  // login, ...); the step itself changes once the user swipes.
+  const [postSplashStep, setPostSplashStep] = useState<AppStep>('login');
+  const [splashDone, setSplashDone] = useState(false);
+  const handleSplashDone = useCallback(() => setSplashDone(true), []);
   const [token, setToken] = useState<string | null>(null);
   const [owner, setOwner] = useState<Owner | null>(null);
   const [bank, setBank] = useState<Bank | null>(null);
@@ -283,7 +292,7 @@ export default function App() {
   const [kycRequestDocument, setKycRequestDocument] = useState<keyof KycUploadFiles | null>(null);
   const [kycRequestOrigin, setKycRequestOrigin] = useState<'register' | 'documents' | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
-  const [, setIsBootstrapping] = useState(true);
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
 
   const normalizedPhone = useMemo(
     () => mobileNumber.replace(/\D/g, '').slice(0, 10),
@@ -838,49 +847,66 @@ export default function App() {
     let active = true;
 
     const bootstrapAuth = async () => {
-      const splashStart = Date.now();
-      const ensureMinSplash = async () => {
-        const elapsed = Date.now() - splashStart;
-        const remaining = 5200 - elapsed;
-        if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
-      };
-
       try {
         const storedToken =
           Platform.OS === 'android' && OwnerAuthStorage?.getItem
             ? await OwnerAuthStorage.getItem(AUTH_TOKEN_KEY)
             : null;
         if (!storedToken) {
-          // Unauthenticated — stay on splash until user taps "Swipe to get started"
+          // Unauthenticated — the swipe lands on login (default).
           return;
         }
 
-        const result = await refreshOwnerProfile(storedToken);
+        // The session must survive app restarts until the owner logs out, so a
+        // flaky network at launch is retried instead of treated as a logout.
+        let result: Awaited<ReturnType<typeof refreshOwnerProfile>> | null = null;
+        let lastError: unknown = null;
+        for (let attempt = 0; attempt < 3 && !result; attempt += 1) {
+          try {
+            result = await refreshOwnerProfile(storedToken);
+          } catch (error) {
+            lastError = error;
+            if (!ownerApiIsNetworkError(error)) break;
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+        }
         if (!active) return;
+
+        if (!result) {
+          if (ownerApiIsNetworkError(lastError)) {
+            // Offline: keep the saved session and open the dashboard, which
+            // reloads its data once the backend is reachable again.
+            setToken(storedToken);
+            setPostSplashStep('dashboard');
+            return;
+          }
+          throw lastError;
+        }
 
         setToken(storedToken);
 
         if (result.owner?.kycStatus === 'APPROVED') {
-          await loadDashboardData(storedToken);
+          try {
+            await loadDashboardData(storedToken);
+          } catch (error) {
+            console.warn('Dashboard data will load later:', error);
+          }
           if (!active) return;
-          await ensureMinSplash();
-          if (active) setStep('dashboard');
+          setPostSplashStep('dashboard');
           return;
         }
 
         if (result.owner?.kycStatus === 'PENDING' || result.owner?.kycStatus === 'REJECTED') {
-          await ensureMinSplash();
-          if (active) setStep('pending-approval');
+          if (active) setPostSplashStep('pending-approval');
           return;
         }
 
-        await ensureMinSplash();
-        if (active) setStep(resolveKycStep(result.owner));
+        if (active) setPostSplashStep(resolveKycStep(result.owner));
       } catch (error) {
+        // Only an invalid / expired token ends the session.
         await clearAuthToken();
         console.log('Failed to restore owner session:', error);
-        await ensureMinSplash();
-        if (active) setStep('login');
+        if (active) setPostSplashStep('login');
       } finally {
         if (active) {
           setIsBootstrapping(false);
@@ -894,6 +920,13 @@ export default function App() {
       active = false;
     };
   }, []);
+
+  // Leave the splash only after the user swiped AND the session check finished.
+  useEffect(() => {
+    if (!splashDone || isBootstrapping) return;
+    setStep(postSplashStep);
+  }, [splashDone, isBootstrapping, postSplashStep]);
+
 
   useEffect(() => {
     if (!token) return;
@@ -1067,8 +1100,17 @@ export default function App() {
     if (!token) return;
     const originatingKycFlow = kycRequestOrigin;
     if (!kycRequestDocument) {
-      if (!kycFiles.profilePhoto || !kycFiles.adharFile || !kycFiles.panFile) {
-        Alert.alert('Select all documents', 'Please upload Aadhaar, PAN, and profile photo before submitting.');
+      const hasDoc = (picked?: KycUploadFile | null, existing?: string) => Boolean(picked || existing);
+      if (
+        !hasDoc(kycFiles.adharFile, owner?.adharFile) ||
+        !hasDoc(kycFiles.adharBackFile, owner?.adharBackFile) ||
+        !hasDoc(kycFiles.panFile, owner?.panFile) ||
+        !hasDoc(kycFiles.profilePhoto, owner?.profilePhotoUrl)
+      ) {
+        Alert.alert(
+          'Documents required',
+          'Please upload Aadhaar card (front and back), PAN card and a profile photo before submitting.',
+        );
         return;
       }
     } else if (!kycFiles[kycRequestDocument]) {
@@ -1258,6 +1300,44 @@ export default function App() {
     }));
   };
 
+  // "Go to Dashboard" on the activation sheet leads here. The toggles are saved
+  // as settings (best-effort) and the owner always lands on the dashboard.
+  const handlePermissionsContinue = async (permissions: OwnerPermissions) => {
+    if (token) {
+      setAuthBusy(true);
+      try {
+        const result = await ownerApi.updateSettings(token, {
+          settings: {
+            ...settings,
+            permissions: {
+              ...(settings.permissions || {}),
+              location: permissions.location,
+              notifications: permissions.notifications,
+            },
+            location: {
+              ...(settings.location || {}),
+              isEnabled: permissions.location,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        });
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...result.settings,
+          notifications: {
+            ...DEFAULT_SETTINGS.notifications,
+            ...(result.settings?.notifications || {}),
+          },
+        });
+      } catch (error) {
+        console.warn('Failed to save permissions:', error);
+      } finally {
+        setAuthBusy(false);
+      }
+    }
+    setStep('dashboard');
+  };
+
   const handleSaveSettings = async () => {
     if (!token) return;
     setAuthBusy(true);
@@ -1428,7 +1508,7 @@ export default function App() {
   const renderScreen = () => {
     switch (step) {
       case 'splash':
-        return <SplashScreen onGetStarted={() => setStep('login')} />;
+        return <SplashScreen onGetStarted={handleSplashDone} />;
       case 'login':
         return (
           <LoginScreen
@@ -1480,6 +1560,7 @@ export default function App() {
             requestedDocument={kycRequestDocument}
             existingDocuments={{
               adharFileUrl: kyc?.documents?.adharFile || owner?.adharFile || undefined,
+              adharBackFileUrl: kyc?.documents?.adharBackFile || owner?.adharBackFile || undefined,
               panFileUrl: kyc?.documents?.panFile || owner?.panFile || undefined,
               profilePhotoUrl: owner?.profilePhotoUrl || undefined,
             }}
@@ -1509,7 +1590,27 @@ export default function App() {
           />
         );
       case 'activated':
-        return <AccountActivatedScreen onGoToDashboard={() => setStep('dashboard')} />;
+        // Figma 477-14493: the approval sheet sits over the pending screen.
+        return (
+          <>
+            <PendingApprovalScreen
+              ownerName={owner?.name || fullName || 'Owner'}
+              status="APPROVED"
+            />
+            <AccountActivatedSheet
+              message="You can now start accepting rides and earning."
+              onGoToDashboard={() => setStep('permissions')}
+            />
+          </>
+        );
+      case 'permissions':
+        return (
+          <PermissionsScreen
+            onContinue={(permissions) => void handlePermissionsContinue(permissions)}
+            initialPermissions={settings.permissions}
+            loading={authBusy}
+          />
+        );
       case 'dashboard':
         return (
           <DashboardScreen
@@ -1859,6 +1960,7 @@ export default function App() {
             kyc={kyc}
             vehicles={vehicles}
             onViewAadhaar={() => void openDocumentUrl(kyc?.documents?.adharFile || owner?.adharFile, 'Aadhaar document is not available yet.')}
+            onViewAadhaarBack={() => void openDocumentUrl(kyc?.documents?.adharBackFile || owner?.adharBackFile, 'Aadhaar back side is not available yet.')}
             onViewPan={() => void openDocumentUrl(kyc?.documents?.panFile || owner?.panFile, 'PAN document is not available yet.')}
             onViewInsurance={() =>
               void openDocumentUrl(
@@ -1997,15 +2099,10 @@ export default function App() {
     };
   }, [step, token]);
 
-  useEffect(() => {
-    if (step !== 'activated') return;
-    const timeoutId = setTimeout(() => setStep('dashboard'), 5000);
-    return () => clearTimeout(timeoutId);
-  }, [step]);
-
   return (
+    <SafeAreaProvider>
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -2035,6 +2132,7 @@ export default function App() {
         }}
       />
     </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 

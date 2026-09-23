@@ -18,6 +18,8 @@ import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import { GradientButton } from '../components/GradientButton';
 import { ArrowLeftIcon, SendIcon } from '../components/OwnerIcons';
 import { SupportContact, SupportFaq } from '../services/ownerApi';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 const DEFAULT_PHONE = '18001234567';
 const DEFAULT_EMAIL = 'support@slydomobility.com';
@@ -101,6 +103,7 @@ function ContactTile({
   label: string;
   onPress: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <Pressable style={styles.tile} onPress={onPress}>
       <View style={styles.tileIcon}>{icon}</View>
@@ -133,6 +136,8 @@ export function SupportScreen({
   loading?: boolean;
   onTabPress?: (tab: TabKey) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const supportPhone = `tel:${contact?.phone || DEFAULT_PHONE}`;
@@ -161,7 +166,7 @@ export function SupportScreen({
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.headerBlock}>
+          <View style={[styles.headerBlock, { paddingTop: insets.headerTop + 4 }]}>
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
               <HeaderGradient />
             </View>
@@ -273,7 +278,7 @@ export function SupportScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   safe: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -288,7 +293,6 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   headerBlock: {
-    paddingTop: 44,
     paddingHorizontal: 16,
     paddingBottom: 20,
     borderBottomLeftRadius: 24,
@@ -457,4 +461,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
   },
-});
+} as const;

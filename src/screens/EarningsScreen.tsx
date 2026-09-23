@@ -24,6 +24,8 @@ import {
 import { COLORS } from '../constants/theme';
 import { EarningsResponse } from '../services/ownerApi';
 import { formatCurrency, formatShortDate } from '../utils/format';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 type EarningsRange = 'today' | 'week' | 'month';
 
@@ -59,6 +61,7 @@ function LineChart({
 }: {
   data: Array<{ label: string; value: number }>;
 }) {
+  const styles = useStyles(RAW_STYLES);
   if (data.length === 0) {
     return <Text style={styles.emptyChart}>No earnings trend data yet.</Text>;
   }
@@ -105,6 +108,7 @@ function BarChart({
 }: {
   data: Array<{ label: string; value: number }>;
 }) {
+  const styles = useStyles(RAW_STYLES);
   if (data.length === 0) {
     return <Text style={styles.emptyChart}>No vehicle earnings data yet.</Text>;
   }
@@ -166,6 +170,7 @@ function TransactionRow({
   negative?: boolean;
   accent?: boolean;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.txItem}>
       <View style={[styles.txIconWrap, negative && styles.txIconWrapNegative]}>
@@ -201,6 +206,8 @@ export function EarningsScreen({
   onRefresh?: () => void;
   onTabPress: (tab: TabKey) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const trend = earnings?.trend ?? [];
   const vehicleWise = earnings?.vehicleWise ?? [];
   const recentTransactions = earnings?.recentTransactions ?? [];
@@ -222,7 +229,7 @@ export function EarningsScreen({
     <View style={styles.root}>
       <AppBackground variant="auth" />
 
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.headerTop }]}>
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#101828" />
         </Pressable>
@@ -338,11 +345,10 @@ export function EarningsScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 96,
-    paddingTop: 40,
+    minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -571,4 +577,4 @@ const styles = StyleSheet.create({
   cta: {
     marginTop: 0,
   },
-});
+} as const;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import {
@@ -9,6 +9,8 @@ import {
   ShieldCheckIcon,
 } from '../components/OwnerIcons';
 import { OwnerSettings } from '../services/ownerApi';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 function Toggle({
   value,
@@ -17,6 +19,7 @@ function Toggle({
   value: boolean;
   onChange: (next: boolean) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <Pressable
       style={[styles.toggle, value ? styles.toggleOn : styles.toggleOff]}
@@ -39,6 +42,7 @@ function NotificationRow({
   value: boolean;
   onToggle: (next: boolean) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.notificationRow}>
       <View style={styles.notificationTextWrap}>
@@ -61,6 +65,7 @@ function GeneralRow({
   subtitle: string;
   onPress?: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <Pressable style={styles.generalRow} onPress={onPress}>
       <View style={styles.generalIcon}>{icon}</View>
@@ -85,13 +90,15 @@ export function SettingsScreen({
   onSave?: () => void;
   onTabPress?: (tab: TabKey) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const notifications = settings?.notifications || {};
 
   return (
     <View style={styles.root}>
       <AppBackground variant="auth" />
 
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.headerTop }]}>
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#0f172a" />
         </Pressable>
@@ -153,12 +160,11 @@ export function SettingsScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 96,
+    minHeight: 96,
     paddingHorizontal: 24,
-    paddingTop: 40,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.62)',
@@ -293,4 +299,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-});
+} as const;

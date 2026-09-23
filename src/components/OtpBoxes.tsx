@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { COLORS } from '../constants/theme';
+import { useStyles } from '../utils/responsiveStyles';
 
 export function OtpBoxes({
   otp,
@@ -11,6 +12,7 @@ export function OtpBoxes({
   length: number;
   activeIndex?: number;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.row}>
       {Array.from({ length }).map((_, index) => {
@@ -26,7 +28,7 @@ export function OtpBoxes({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   row: {
     marginTop: 16,
     flexDirection: 'row',
@@ -51,4 +53,4 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: COLORS.textPrimary,
   },
-});
+} as const;

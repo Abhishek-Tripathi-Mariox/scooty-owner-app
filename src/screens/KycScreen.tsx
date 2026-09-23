@@ -1,28 +1,16 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Pressable, Text, View } from 'react-native';
 import { GradientButton } from '../components/GradientButton';
-import { PageFrame } from '../components/PageFrame';
-import { ProgressBar } from '../components/ProgressBar';
-import { COLORS } from '../constants/theme';
+import { KycFrame } from '../components/KycFrame';
+import { UploadArrowIcon } from '../components/OwnerIcons';
+import { FONTS } from '../constants/fonts';
 import type { KycUploadFiles } from '../services/ownerApi';
+import { useStyles } from '../utils/responsiveStyles';
 
 type KycField = keyof KycUploadFiles;
 
-function UploadIcon({ size = 32, color = '#6a7282' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 3v12m0-12-4 4m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"
-        stroke={color}
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
+// Figma 477-14094 "Complete KYC / Upload Documents": label, then a 126px
+// frosted card with the upload glyph and a hint, centred.
 function UploadCard({
   label,
   hint,
@@ -34,6 +22,7 @@ function UploadCard({
   fileName?: string;
   onPress: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   const isUploaded = Boolean(fileName);
   return (
     <View style={styles.uploadBlock}>
@@ -42,7 +31,7 @@ function UploadCard({
         style={[styles.uploadCard, isUploaded && styles.uploadCardSelected]}
         onPress={onPress}
       >
-        <UploadIcon size={32} color={isUploaded ? '#fc4c02' : '#6a7282'} />
+        <UploadArrowIcon size={32} color={isUploaded ? '#fc4c02' : '#99a1af'} />
         <Text
           style={[styles.uploadHint, isUploaded && styles.uploadHintSelected]}
           numberOfLines={1}
@@ -72,98 +61,87 @@ export function KycScreen({
   requestedDocument?: KycField | null;
   existingDocuments?: {
     adharFileUrl?: string;
+    adharBackFileUrl?: string;
     panFileUrl?: string;
     profilePhotoUrl?: string;
   };
   loading?: boolean;
 }) {
+  const styles = useStyles(RAW_STYLES);
   const isChangeRequest = Boolean(requestedDocument);
+  // Mandatory: Aadhaar front + back, PAN, profile photo (no driving licence for owners).
   const isReady = isChangeRequest
     ? Boolean(requestedDocument && documents[requestedDocument])
-    : Boolean(documents.profilePhoto && documents.adharFile && documents.panFile);
-
-  const getHint = (field: KycField, defaultHint: string, existingUrl?: string | undefined) => {
-    if (documents[field]?.name) return documents[field]!.name;
-    if (existingUrl) return 'Current document uploaded';
-    return defaultHint;
-  };
+    : Boolean(
+        (documents.adharFile || existingDocuments?.adharFileUrl) &&
+          (documents.adharBackFile || existingDocuments?.adharBackFileUrl) &&
+          (documents.panFile || existingDocuments?.panFileUrl) &&
+          (documents.profilePhoto || existingDocuments?.profilePhotoUrl),
+      );
+  const existingLabel = (url?: string) => (url ? 'Current document uploaded' : undefined);
 
   return (
-    <PageFrame title="Complete KYC" onBack={onBack} scroll titleStyle={styles.pageTitle}>
-      <ProgressBar progress={50} />
+    <KycFrame title="Complete KYC" progress={50} onBack={onBack}>
+      <Text style={styles.sectionTitle}>Upload Documents</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Upload Documents</Text>
-
-        <UploadCard
-          label="Upload Aadhaar"
-          hint="Click to upload Aadhaar"
-          fileName={
-            documents.adharFile?.name ||
-            (existingDocuments?.adharFileUrl ? 'Current document uploaded' : undefined)
-          }
-          onPress={() => onPickDocument('adharFile')}
-        />
-        <UploadCard
-          label="Upload PAN Card"
-          hint="Click to upload PAN Card"
-          fileName={
-            documents.panFile?.name ||
-            (existingDocuments?.panFileUrl ? 'Current document uploaded' : undefined)
-          }
-          onPress={() => onPickDocument('panFile')}
-        />
-        <UploadCard
-          label="Upload Profile Photo"
-          hint="Click to upload photo"
-          fileName={
-            documents.profilePhoto?.name ||
-            (existingDocuments?.profilePhotoUrl ? 'Current document uploaded' : undefined)
-          }
-          onPress={() => onPickDocument('profilePhoto')}
-        />
-      </View>
+      <UploadCard
+        label="Upload Aadhaar Card (Front)"
+        hint="Click to upload Aadhaar front side"
+        fileName={documents.adharFile?.name || existingLabel(existingDocuments?.adharFileUrl)}
+        onPress={() => onPickDocument('adharFile')}
+      />
+      <UploadCard
+        label="Upload Aadhaar Card (Back)"
+        hint="Click to upload Aadhaar back side"
+        fileName={documents.adharBackFile?.name || existingLabel(existingDocuments?.adharBackFileUrl)}
+        onPress={() => onPickDocument('adharBackFile')}
+      />
+      <UploadCard
+        label="Upload PAN Card"
+        hint="Click to upload PAN Card"
+        fileName={documents.panFile?.name || existingLabel(existingDocuments?.panFileUrl)}
+        onPress={() => onPickDocument('panFile')}
+      />
+      <UploadCard
+        label="Upload Profile Photo"
+        hint="Click to upload photo"
+        fileName={documents.profilePhoto?.name || existingLabel(existingDocuments?.profilePhotoUrl)}
+        onPress={() => onPickDocument('profilePhoto')}
+      />
 
       <GradientButton
         label={loading ? 'Submitting...' : isChangeRequest ? 'Submit' : 'Next'}
         onPress={isChangeRequest ? onSubmit : onNext}
-        style={styles.button}
         disabled={loading || !isReady}
-        height={46}
-        radius={23}
+        height={48}
+        radius={14}
       />
-    </PageFrame>
+    </KycFrame>
   );
 }
 
-const styles = StyleSheet.create({
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 32,
-  },
-  section: {
-    marginTop: 20,
-  },
+const RAW_STYLES = {
   sectionTitle: {
-    color: COLORS.textPrimary,
+    color: '#1e293b',
+    fontFamily: FONTS.semiBold,
     fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 26,
-    marginBottom: 12,
+    fontWeight: '600',
+    lineHeight: 28,
+    marginBottom: 16,
   },
   uploadBlock: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   uploadLabel: {
-    marginBottom: 6,
+    marginBottom: 8,
+    color: '#1e293b',
+    fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
+    fontWeight: '500',
     lineHeight: 18,
   },
   uploadCard: {
-    height: 100,
+    height: 126,
     borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderWidth: 1,
@@ -171,6 +149,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    paddingHorizontal: 32,
   },
   uploadCardSelected: {
     borderColor: '#fc4c02',
@@ -178,17 +157,14 @@ const styles = StyleSheet.create({
   },
   uploadHint: {
     color: '#6a7282',
-    fontSize: 13,
-    lineHeight: 18,
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    lineHeight: 20,
     textAlign: 'center',
-    paddingHorizontal: 24,
   },
   uploadHintSelected: {
     color: '#fc4c02',
+    fontFamily: FONTS.medium,
     fontWeight: '500',
   },
-  button: {
-    marginTop: 8,
-    marginBottom: 8,
-  },
-});
+} as const;
