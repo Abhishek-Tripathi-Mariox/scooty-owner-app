@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import {
@@ -12,10 +12,12 @@ import {
 } from '../components/OwnerIcons';
 import { Owner, OwnerKyc, VehicleItem } from '../services/ownerApi';
 import { formatShortDate } from '../utils/format';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 type DocStatus = 'VERIFIED' | 'UNDER_REVIEW' | 'NOT_SUBMITTED';
 
-function statusBadge(status: DocStatus) {
+function statusBadge(status: DocStatus, styles: typeof RAW_STYLES) {
   if (status === 'VERIFIED') {
     return (
       <View style={styles.verifiedPill}>
@@ -56,6 +58,7 @@ function DocCard({
   onView?: () => void;
   onRequestChange?: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.docCard}>
       <View style={styles.docHeader}>
@@ -64,7 +67,7 @@ function DocCard({
         </View>
         <View style={styles.docTitleWrap}>
           <Text style={styles.docTitle}>{title}</Text>
-          <View style={styles.docStatusRow}>{statusBadge(status)}</View>
+          <View style={styles.docStatusRow}>{statusBadge(status, styles)}</View>
         </View>
       </View>
 
@@ -103,6 +106,7 @@ export function DocumentsScreen({
   kyc,
   vehicles = [],
   onViewAadhaar,
+  onViewAadhaarBack,
   onViewPan,
   onViewInsurance,
   onRequestChange,
@@ -113,11 +117,14 @@ export function DocumentsScreen({
   kyc?: OwnerKyc | null;
   vehicles?: VehicleItem[];
   onViewAadhaar?: () => void;
+  onViewAadhaarBack?: () => void;
   onViewPan?: () => void;
   onViewInsurance?: () => void;
-  onRequestChange?: (field: 'adharFile' | 'panFile' | 'profilePhoto' | 'insurance') => void;
+  onRequestChange?: (field: 'adharFile' | 'adharBackFile' | 'panFile' | 'profilePhoto' | 'insurance') => void;
   onTabPress?: (tab: TabKey) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const kycStatus = kyc?.status || owner?.kycStatus;
   const aadhaarStatus: DocStatus =
     kycStatus === 'APPROVED' ? 'VERIFIED' : kycStatus === 'PENDING' ? 'UNDER_REVIEW' : 'NOT_SUBMITTED';
@@ -145,7 +152,7 @@ export function DocumentsScreen({
     <View style={styles.root}>
       <AppBackground variant="auth" />
 
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.headerTop }]}>
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#0f172a" />
         </Pressable>
@@ -173,11 +180,20 @@ export function DocumentsScreen({
 
         <DocCard
           emoji="🆔"
-          title="Aadhaar"
+          title="Aadhaar (Front)"
           status={aadhaarStatus}
           uploadedAt={uploadedLabel}
           onView={onViewAadhaar}
           onRequestChange={() => onRequestChange?.('adharFile')}
+        />
+
+        <DocCard
+          emoji="🆔"
+          title="Aadhaar (Back)"
+          status={aadhaarStatus}
+          uploadedAt={uploadedLabel}
+          onView={onViewAadhaarBack}
+          onRequestChange={() => onRequestChange?.('adharBackFile')}
         />
 
         <DocCard
@@ -195,12 +211,11 @@ export function DocumentsScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 96,
+    minHeight: 96,
     paddingHorizontal: 24,
-    paddingTop: 40,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.62)',
@@ -379,4 +394,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 21,
   },
-});
+} as const;

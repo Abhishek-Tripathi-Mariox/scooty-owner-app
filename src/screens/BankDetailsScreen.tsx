@@ -1,11 +1,19 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import { GradientButton } from '../components/GradientButton';
-import { PageFrame } from '../components/PageFrame';
-import { ProgressBar } from '../components/ProgressBar';
+import { KycFrame } from '../components/KycFrame';
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -14,8 +22,11 @@ import {
   InfoIcon,
   PencilIcon,
 } from '../components/OwnerIcons';
+import { FONTS } from '../constants/fonts';
 import { COLORS } from '../constants/theme';
 import { Bank, Owner, type KycUploadFile } from '../services/ownerApi';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 function UploadArrowIcon({ size = 20, color = '#6a7282' }: { size?: number; color?: string }) {
   return (
@@ -67,6 +78,8 @@ export function BankDetailsScreen({
   onChangeForm: (patch: Partial<{ accountHolderName: string; bankName: string; accountNumber: string; ifsc: string; upiId: string; bankFile: KycUploadFile | null }>) => void;
   onSubmit: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const isOnboarding = mode === 'onboarding';
   const isVerified = Boolean(bank?.isVerified);
 
@@ -74,9 +87,7 @@ export function BankDetailsScreen({
     const hasBankFile = Boolean(form.bankFile?.name || bank?.fileUrl);
     const bankFileLabel = form.bankFile?.name || (bank?.fileUrl ? 'Current document uploaded' : 'Upload document');
     return (
-      <PageFrame title="Complete KYC" onBack={onBack} scroll titleStyle={styles.onboardingPageTitle}>
-        <ProgressBar progress={100} />
-
+      <KycFrame title="Complete KYC" progress={100} onBack={onBack}>
         <Text style={styles.onboardingTitle}>Complete Your Profile</Text>
 
         <View style={styles.onboardingField}>
@@ -140,7 +151,7 @@ export function BankDetailsScreen({
             >
               {bankFileLabel}
             </Text>
-            <UploadArrowIcon size={20} color={hasBankFile ? '#fc4c02' : '#6a7282'} />
+            <UploadArrowIcon size={20} color={hasBankFile ? '#fc4c02' : '#99a1af'} />
           </Pressable>
         </View>
 
@@ -151,7 +162,7 @@ export function BankDetailsScreen({
           height={48}
           radius={14}
         />
-      </PageFrame>
+      </KycFrame>
     );
   }
 
@@ -159,7 +170,7 @@ export function BankDetailsScreen({
     <View style={styles.profileRoot}>
       <AppBackground variant="auth" />
 
-      <View style={styles.profileTopbar}>
+      <View style={[styles.profileTopbar, { paddingTop: insets.headerTop }]}>
         <Pressable onPress={onBack} style={styles.profileBack} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#0f172a" />
         </Pressable>
@@ -247,8 +258,11 @@ export function BankDetailsScreen({
       {showEditModal ? (
         <View style={styles.profileOverlay}>
           <Pressable style={styles.profileBackdrop} onPress={onBack} />
-          <ScrollView
+          <KeyboardAvoidingView
             style={styles.profileModalScroll}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+          <ScrollView
             contentContainerStyle={styles.profileModalScrollContent}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -324,6 +338,7 @@ export function BankDetailsScreen({
               </View>
             </View>
           </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       ) : null}
     </View>
@@ -331,6 +346,7 @@ export function BankDetailsScreen({
 }
 
 function Row({ label, value }: { label: string; value: string }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.profileRow}>
       <Text style={styles.profileRowLabel}>{label}</Text>
@@ -352,6 +368,7 @@ function ProfileFormField({
   keyboardType?: 'default' | 'email-address' | 'number-pad' | 'phone-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.modalField}>
       <Text style={styles.modalFieldLabel}>{label}</Text>
@@ -367,30 +384,26 @@ function ProfileFormField({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: COLORS.background },
   content: { paddingBottom: 16 },
-  onboardingPageTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 28,
-  },
   onboardingTitle: {
-    color: COLORS.textPrimary,
+    color: '#1e293b',
+    fontFamily: FONTS.semiBold,
     fontSize: 20,
     fontWeight: '600',
     lineHeight: 28,
-    marginTop: 16,
     marginBottom: 16,
   },
   onboardingField: {
     marginBottom: 16,
   },
   onboardingLabel: {
-    color: COLORS.textPrimary,
+    color: '#1e293b',
+    fontFamily: FONTS.medium,
     fontSize: 14,
     fontWeight: '500',
-    lineHeight: 14,
+    lineHeight: 18,
     marginBottom: 8,
   },
   onboardingInput: {
@@ -401,7 +414,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.3)',
     paddingHorizontal: 12,
     paddingVertical: 0,
-    color: COLORS.textPrimary,
+    color: '#1e293b',
+    fontFamily: FONTS.regular,
     fontSize: 16,
   },
   onboardingUploadRow: {
@@ -421,16 +435,18 @@ const styles = StyleSheet.create({
   },
   onboardingUploadText: {
     color: '#6a7282',
+    fontFamily: FONTS.regular,
     fontSize: 14,
     lineHeight: 20,
     flex: 1,
   },
   onboardingUploadTextSelected: {
     color: '#fc4c02',
+    fontFamily: FONTS.medium,
     fontWeight: '500',
   },
   onboardingSubmit: {
-    marginTop: 8,
+    marginTop: 32,
   },
   fieldLabel: {
     color: COLORS.textPrimary,
@@ -600,9 +616,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   profileTopbar: {
-    height: 96,
+    minHeight: 96,
     paddingHorizontal: 24,
-    paddingTop: 40,
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.62)',
@@ -863,7 +878,7 @@ const styles = StyleSheet.create({
     lineHeight: 19.5,
   },
   modalUpload: {
-    height: 136,
+    minHeight: 136,
     borderRadius: 12,
     borderWidth: 1.162,
     borderColor: '#d1d5dc',
@@ -921,4 +936,4 @@ const styles = StyleSheet.create({
   profileModalSubmit: {
     flex: 1,
   },
-});
+} as const;

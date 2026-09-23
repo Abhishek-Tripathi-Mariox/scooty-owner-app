@@ -1,5 +1,7 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useStyles } from '../utils/responsiveStyles';
+import { useScreenInsets } from '../utils/insets';
 
 const HomeImage = require('../assets/images/bottom/homeimage.png');
 const ScootyImage = require('../assets/images/bottom/scootyimage.png');
@@ -19,8 +21,10 @@ export function BottomTabs({
   active: TabKey;
   onTabPress: (tab: TabKey) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { paddingBottom: 8 + insets.bottom }]}>
       {tabs.map((tab) => {
         const isActive = active === tab.key;
         const color = isActive ? ACTIVE_COLOR : INACTIVE_COLOR;
@@ -102,12 +106,12 @@ const tabs: Array<{ key: TabKey; label: string; image?: number }> = [
   { key: 'profile', label: 'Profile', image: ProfileImage },
 ];
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   bar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    height: 68,
+    minHeight: 68,
     paddingTop: 6,
     paddingBottom: 8,
     borderTopWidth: 1,
@@ -141,4 +145,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0.2,
   },
-});
+} as const;

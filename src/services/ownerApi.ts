@@ -25,9 +25,11 @@ export type KycUploadFile = {
   size?: number | null;
 };
 
+// Owner KYC uploads: Aadhaar front + back, PAN and profile photo, all mandatory.
 export type KycUploadFiles = {
   profilePhoto?: KycUploadFile | null;
-  adharFile?: KycUploadFile | null;
+  adharFile?: KycUploadFile | null; // Aadhaar front
+  adharBackFile?: KycUploadFile | null;
   panFile?: KycUploadFile | null;
 };
 
@@ -51,7 +53,8 @@ export type Owner = {
   adress?: string;
   role?: string;
   profilePhotoUrl?: string;
-  adharFile?: string;
+  adharFile?: string; // Aadhaar front
+  adharBackFile?: string;
   panFile?: string;
   kycSubmittedAt?: string | null;
   kycVerifiedAt?: string | null;
@@ -263,6 +266,11 @@ export type SupportTicket = {
 };
 
 export type OwnerSettings = {
+  permissions?: {
+    location?: boolean;
+    camera?: boolean;
+    notifications?: boolean;
+  };
   notifications?: {
     rideUpdates?: boolean;
     earnings?: boolean;
@@ -305,7 +313,8 @@ export type OwnerKyc = {
   verifiedAt?: string | null;
   documents?: {
     profilePhotoUrl?: string;
-    adharFile?: string;
+    adharFile?: string; // Aadhaar front
+    adharBackFile?: string;
     panFile?: string;
   };
 };
@@ -409,7 +418,11 @@ const request = async <T>(path: string, options: RequestOptions = {}): Promise<T
       error instanceof ApiError &&
       /cannot reach api/i.test(error.message);
 
-    if ((!isRouteNotFound && !isLocalConnectionIssue) || LOCAL_OWNER_API_BASE_URL === OWNER_API_BASE_URL) {
+    if (
+      !__DEV__ ||
+      (!isRouteNotFound && !isLocalConnectionIssue) ||
+      LOCAL_OWNER_API_BASE_URL === OWNER_API_BASE_URL
+    ) {
       throw error;
     }
 
@@ -532,6 +545,7 @@ export const ownerApi = {
     const formData = new FormData();
     appendFile(formData, 'profilePhoto', files.profilePhoto);
     appendFile(formData, 'adharFile', files.adharFile);
+    appendFile(formData, 'adharBackFile', files.adharBackFile);
     appendFile(formData, 'panFile', files.panFile);
 
     return request<{ kyc: JsonObject }>('/owner/kyc', {
@@ -677,3 +691,8 @@ export const ownerApi = {
 
 export const ownerApiErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : 'Something went wrong';
+
+// True when the request never reached the backend (offline, server down),
+// as opposed to the backend rejecting it (e.g. an expired token).
+export const ownerApiIsNetworkError = (error: unknown): boolean =>
+  error instanceof ApiError && /cannot reach api/i.test(error.message || '');

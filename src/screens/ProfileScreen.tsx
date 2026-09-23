@@ -25,6 +25,8 @@ import {
 } from '../components/OwnerIcons';
 import { Bank, Dashboard, Owner, OwnerKyc } from '../services/ownerApi';
 import { formatCompactCurrency } from '../utils/format';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 type ProfileMenuKey = 'editProfile' | 'bankDetails' | 'documents' | 'settings' | 'support';
 
@@ -73,6 +75,8 @@ export function ProfileScreen({
   dashboard?: Dashboard | null;
   kyc?: OwnerKyc | null;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const displayName = owner?.name || owner?.companyName || 'Profile not set';
   const displayPhone = owner?.mobile ? `+91 ${owner.mobile}` : 'Mobile number unavailable';
   const displayEmail = owner?.email || 'Email not added';
@@ -129,7 +133,7 @@ export function ProfileScreen({
       <AppBackground variant="auth" />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.headerBlock}>
+        <View style={[styles.headerBlock, { paddingTop: insets.headerTop + 8 }]}>
           <View style={StyleSheet.absoluteFill} pointerEvents="none">
             <HeaderGradient />
           </View>
@@ -221,7 +225,7 @@ export function ProfileScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   safe: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -233,7 +237,6 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   headerBlock: {
-    paddingTop: 48,
     paddingHorizontal: 16,
     paddingBottom: 28,
     borderBottomRightRadius: 44,
@@ -397,4 +400,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 22,
   },
-});
+} as const;

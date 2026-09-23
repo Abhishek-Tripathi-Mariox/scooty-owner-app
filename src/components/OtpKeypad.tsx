@@ -1,6 +1,7 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { COLORS } from '../constants/theme';
+import { useStyles } from '../utils/responsiveStyles';
 
 const keypadLetters: Record<string, string> = {
   2: 'abc',
@@ -20,6 +21,7 @@ export function OtpKeypad({
   onKeyPress: (value: string) => void;
   onBackspace: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.keypad}>
       {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((key) => (
@@ -40,7 +42,7 @@ export function OtpKeypad({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   keypad: {
     width: '100%',
     paddingTop: 4,
@@ -96,4 +98,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
   },
-});
+} as const;

@@ -1,7 +1,9 @@
 import React, { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { FONTS } from '../constants/fonts';
 import { COLORS } from '../constants/theme';
+import { useStyles } from '../utils/responsiveStyles';
 
 export function GradientButton({
   label,
@@ -24,6 +26,7 @@ export function GradientButton({
   leftIcon?: ReactNode;
   labelStyle?: TextStyle;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <Pressable
       onPress={onPress}
@@ -54,7 +57,7 @@ export function GradientButton({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   button: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -76,15 +79,15 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   disabled: {
-    opacity: 0.55,
+    opacity: 0.5,
     elevation: 0,
     shadowOpacity: 0,
   },
   label: {
     color: '#ffffff',
+    fontFamily: FONTS.medium,
     fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    fontWeight: '500',
     lineHeight: 20,
   },
-});
+} as const;

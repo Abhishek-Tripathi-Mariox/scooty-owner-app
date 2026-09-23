@@ -20,6 +20,8 @@ import {
 import { COLORS } from '../constants/theme';
 import { Bank, PayoutItem } from '../services/ownerApi';
 import { formatCurrency, formatShortDate } from '../utils/format';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 function GradientHeader() {
   return (
@@ -44,6 +46,7 @@ function HistoryItem({
   date: string;
   status: string;
 }) {
+  const styles = useStyles(RAW_STYLES);
   const isProcessing = status.toLowerCase() === 'processing';
   return (
     <View style={styles.historyItem}>
@@ -86,6 +89,8 @@ export function RequestPayoutScreen({
   loading?: boolean;
   onTabPress: (tab: TabKey) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const accountMask = bank?.accountNumber
     ? `•••• •••• •••• ${bank.accountNumber.slice(-4)}`
     : 'No bank details';
@@ -94,7 +99,7 @@ export function RequestPayoutScreen({
     <View style={styles.root}>
       <AppBackground variant="auth" />
 
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.headerTop }]}>
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#101828" />
         </Pressable>
@@ -205,12 +210,11 @@ export function RequestPayoutScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
   topbar: {
-    height: 96,
-    paddingTop: 40,
+    minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -239,7 +243,7 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     borderRadius: 16,
-    height: 116,
+    minHeight: 116,
     paddingHorizontal: 24,
     paddingTop: 24,
     overflow: 'hidden',
@@ -444,4 +448,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
   },
-});
+} as const;

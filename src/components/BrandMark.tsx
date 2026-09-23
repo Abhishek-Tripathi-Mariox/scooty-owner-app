@@ -5,16 +5,15 @@ import { COLORS } from '../constants/theme';
 
 const SlydoLogo = require('../assets/images/slydo-logo-upright.png');
 
+// Centered vertical lockup matching the user app's BrandHeader: big logo on
+// top, "Slydo Mobility" below, with the owner-portal tagline underneath.
 export function BrandMark() {
   return (
     <View style={styles.wrap}>
-      <View style={styles.lockup}>
-        <Image source={SlydoLogo} style={styles.logo} resizeMode="contain" />
-        <View style={styles.wordmark}>
-          <Text style={styles.title}>Slydo</Text>
-          <Text style={styles.titleSub}>Mobility</Text>
-        </View>
-      </View>
+      <Image source={SlydoLogo} style={styles.logo} resizeMode="contain" />
+      <Text style={styles.title} numberOfLines={1}>
+        Slydo Mobility
+      </Text>
       <Text style={styles.subtitle}>Vehicle Owner Portal</Text>
     </View>
   );
@@ -23,40 +22,27 @@ export function BrandMark() {
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
-  },
-  lockup: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'center',
   },
   logo: {
-    width: 62,
-    height: 62,
-    marginRight: 14,
-  },
-  wordmark: {
-    alignItems: 'center',
+    width: 96,
+    height: 96,
   },
   title: {
-    color: '#171717',
-    fontFamily: FONTS.medium,
-    fontSize: 34,
-    lineHeight: 40,
-    letterSpacing: 0.5,
-  },
-  titleSub: {
-    marginTop: -4,
-    color: '#171717',
-    fontFamily: FONTS.regular,
-    fontSize: 16,
-    lineHeight: 22,
+    marginTop: 12,
+    color: '#151515',
+    fontFamily: FONTS.brand,
+    fontSize: 26,
+    fontWeight: 'normal',
+    letterSpacing: 0.4,
   },
   subtitle: {
-    marginTop: 22,
+    marginTop: 8,
     color: COLORS.textPrimary,
     fontFamily: FONTS.semiBold,
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 21,
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
     textAlign: 'center',
   },
 });

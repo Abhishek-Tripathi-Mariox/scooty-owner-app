@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { AppBackground } from '../components/AppBackground';
 import { BottomTabs, type TabKey } from '../components/BottomTabs';
 import {
@@ -11,6 +11,8 @@ import {
 import { COLORS } from '../constants/theme';
 import { NotificationItem } from '../services/ownerApi';
 import { formatShortDate } from '../utils/format';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 type NotificationFilter = 'ALL' | 'RIDE' | 'EARNING' | 'ALERT' | 'SYSTEM';
 
@@ -37,6 +39,7 @@ function NotificationCard({
   item: NotificationItem;
   onPress?: () => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.iconWrap}>{iconForType(item.type)}</View>
@@ -65,6 +68,8 @@ export function NotificationsScreen({
   onMarkRead?: (notificationId: string) => void;
   onTabPress: (tab: TabKey) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const [selectedFilter, setSelectedFilter] = useState<NotificationFilter>('ALL');
   const unread = notifications.filter((item) => !item.isRead).length;
   const visibleNotifications = useMemo(
@@ -79,7 +84,7 @@ export function NotificationsScreen({
     <View style={styles.root}>
       <AppBackground variant="auth" />
 
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.headerTop }]}>
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#101828" />
         </Pressable>
@@ -137,11 +142,10 @@ export function NotificationsScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: 'transparent' },
   topbar: {
-    height: 96,
-    paddingTop: 40,
+    minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -269,4 +273,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
   },
-});
+} as const;

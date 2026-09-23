@@ -4,7 +4,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -22,6 +21,8 @@ import {
 } from '../components/OwnerIcons';
 import { COLORS } from '../constants/theme';
 import { StationItem, type KycUploadFile } from '../services/ownerApi';
+import { useScreenInsets } from '../utils/insets';
+import { useStyles } from '../utils/responsiveStyles';
 
 function Field({
   label,
@@ -36,6 +37,7 @@ function Field({
   onChangeText: (value: string) => void;
   autoCapitalize?: 'none' | 'characters' | 'sentences';
 }) {
+  const styles = useStyles(RAW_STYLES);
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -66,6 +68,7 @@ function UploadCard({
   iconVariant?: 'camera' | 'upload';
   height?: number;
 }) {
+  const styles = useStyles(RAW_STYLES);
   const selected = Boolean(fileName);
   const iconColor = selected ? '#fc4c02' : '#64748b';
   return (
@@ -100,6 +103,7 @@ function StationDropdown({
   selectedId: string;
   onSelect: (id: string) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
   const [open, setOpen] = React.useState(false);
   const selected = stations.find((s) => s._id === selectedId);
 
@@ -224,6 +228,8 @@ export function AddVehicleScreen({
   loading?: boolean;
   onTabPress: (tab: TabKey) => void;
 }) {
+  const styles = useStyles(RAW_STYLES);
+  const insets = useScreenInsets();
   const progress = step === 1 ? 25 : step === 2 ? 50 : step === 3 ? 75 : 100;
   const normalizedOwnerCity = (ownerCity || '')
     .trim()
@@ -258,7 +264,7 @@ export function AddVehicleScreen({
     <View style={styles.root}>
       <AppBackground variant="auth" />
 
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.headerTop }]}>
         <Pressable onPress={onBack} style={styles.back} hitSlop={10}>
           <ArrowLeftIcon size={24} color="#101828" />
         </Pressable>
@@ -438,12 +444,11 @@ export function AddVehicleScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const RAW_STYLES = {
   root: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
   topbar: {
-    height: 96,
-    paddingTop: 40,
+    minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -724,4 +729,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 20,
   },
-});
+} as const;

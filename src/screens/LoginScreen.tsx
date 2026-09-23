@@ -87,13 +87,13 @@ export function LoginScreen({
       </View>
 
       <View style={styles.footerBlock}>
-        <Text style={styles.footerHint}>New to MOVYRA?</Text>
+        <Text style={styles.footerHint}>New to Slydo Mobility?</Text>
         <Text style={styles.footerLink} onPress={onRegisterPress}>
           Register as Vehicle Owner
         </Text>
       </View>
 
-        <Text style={styles.copyright}>© 2026 MOVYRA. All rights reserved.</Text>
+        <Text style={styles.copyright}>© 2026 Slydo Mobility. All rights reserved.</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -132,7 +132,7 @@ const RAW_STYLES = {
     marginBottom: 8,
   },
   inputRow: {
-    height: 56,
+    height: 48,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.line,
@@ -156,21 +156,21 @@ const RAW_STYLES = {
     paddingVertical: 0,
   },
   termsRow: {
-    marginTop: 24,
+    marginTop: 20,
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 5,
     borderWidth: 1.5,
     borderColor: '#a8a4ab',
-    marginTop: 3,
-    marginRight: 12,
+    marginTop: 1,
+    marginRight: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: '#ffffff',
     flexShrink: 0,
   },
   checkboxChecked: {
@@ -179,23 +179,22 @@ const RAW_STYLES = {
   },
   checkboxMark: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '900',
-    lineHeight: 15,
+    lineHeight: 12,
   },
   termsText: {
     flex: 1,
     color: COLORS.textSecondary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    lineHeight: 28,
+    lineHeight: 18,
   },
   termsLink: {
     color: COLORS.textPrimary,
-    textDecorationLine: 'underline',
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '600',
-    lineHeight: 28,
+    lineHeight: 18,
   },
   sendButton: {
     marginTop: 24,
